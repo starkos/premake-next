@@ -38,8 +38,20 @@
 		files
 		{
 			'src/**.h', 'src/**.c',
-			'src/**.lua'
+			'src/**.lua',
+			'contrib/lua/src/**.h', 'contrib/lua/src/**.c'
 		}
+
+		removefiles
+		{
+			'contrib/lua/src/lua.c',
+			'contrib/lua/src/luac.c',
+			'contrib/lua/src/print.c',
+			'contrib/lua/**.lua',
+			'contrib/lua/etc/*.c'
+		}
+
+		includedirs { 'contrib/lua/src' }
 
 		filter 'configurations:Debug'
 			targetdir 'bin/debug'
