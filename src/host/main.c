@@ -1,11 +1,34 @@
 #include "premake.h"
 
+static void errorHandler(const char* message, const char* traceback);
+
+
 int main(int argc, const char** argv)
 {
-	int z = premake_init();
+	(void) argc;
+	(void) argv;
 
-	if (z == OKAY)
-		z = premake_execute(argc, argv, "src/main.lua");
+	Premake* pmk = premake_init(errorHandler);
+	if (pmk == NULL)
+		return (-1);
 
+	if (premake_execute(pmk, argc, argv, "src/main.lua") != OKAY)
+		return (-1);
+
+	premake_close(pmk);
 	return (0);
+}
+
+
+static void errorHandler(const char* message, const char* traceback)
+{
+#if !defined(NDEBUG)
+	if (traceback != NULL) {
+		message = traceback;
+	}
+#else
+	(void) traceback;
+#endif
+
+	printf("Error: %s\n", message);
 }
