@@ -2,6 +2,6 @@
 
 An exploratory take on new ideas and approaches for the [Premake build tool](https://premake.github.io/).
 
-## Major Changes
+## Quick Links
 
-- [Improved the C library API](https://github.com/starkos/premake-next/issues/1)
+- [What's Different?](https://github.com/starkos/premake-next/blob/master/docs/changes-since-v5.md)

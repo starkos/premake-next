@@ -1,9 +1,7 @@
 #define lua_c
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
-
-#include <stdlib.h>
+#include "lua/src/lua.h"
+#include "lua/src/lauxlib.h"
+#include "lua/src/lualib.h"
 
 /* A Premake context object */
 typedef struct Premake Premake;
@@ -31,7 +29,7 @@ void premake_close(Premake* pmk);
  * the Premake usage documentation online for a full description of
  * the command line options.
  */
-int premake_execute(Premake* pmk, int argc, const char** argv, const char* script);
+int premake_execute(Premake* pmk, int argc, const char** argv);
 
 /**
  * Returns a reference to Premake's embedded Lua runtime state.

@@ -51,7 +51,11 @@
 			'contrib/lua/etc/*.c'
 		}
 
-		includedirs { 'contrib/lua/src' }
+		includedirs
+		{
+			'include',
+			'contrib'
+		}
 
 		filter 'configurations:Debug'
 			targetdir 'bin/debug'
