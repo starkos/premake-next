@@ -113,8 +113,8 @@ int pmk_string_startsWith(lua_State* L);
 
 int pmk_path_getAbsolute(lua_State* L);
 int pmk_path_getDirectory(lua_State* L);
+int pmk_path_getKind(lua_State* L);
 int pmk_path_isAbsolute(lua_State* L);
-int pmk_path_kind(lua_State* L);
 int pmk_path_translate(lua_State* L);
 
 /* Premake module function */

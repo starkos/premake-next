@@ -33,4 +33,6 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 
 - The code has been reorganized to be more module-oriented, with less global namespace clutter. In particular, the `premake` and `path` globals are gone; you'll now need to `local premake = require('premake')` and `local path = require('path')` instead. In addition to cleaning up the globals table, this means that core features and actions are now lazy-loaded on demand, rather than always loading everything up front.
 
+- Documentation is now stored in a `docs/` folder in the main repository. This allows it to be authored alongside the code, and reviewed and approved as part of the normal pull request process.
+
 - The internal C APIs are now faster (using local buffers instead of the Lua stack) and use more consistent function signatures.
