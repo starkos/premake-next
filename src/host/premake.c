@@ -33,8 +33,8 @@ static const luaL_Reg os_functions[] = {
 static const luaL_Reg path_functions[] = {
 	{ "getAbsolute", pmk_path_getAbsolute },
 	{ "getDirectory", pmk_path_getDirectory },
+	{ "getKind", pmk_path_getKind },
 	{ "isAbsolute", pmk_path_isAbsolute },
-	{ "kind", pmk_path_kind },
 	{ "translate", pmk_path_translate },
 	{ NULL, NULL }
 };
@@ -254,6 +254,12 @@ static void setSearchPath(lua_State* L, int argc, const char** argv)
 	lua_pushstring(L, "/usr/share/premake");
 	lua_rawseti(L, -2, ++n);
 #endif
+
+	/* the directory containing the Premake executable */
+	lua_getglobal(L, "_PREMAKE");
+	lua_getfield(L, -1, "COMMAND_DIR");
+	lua_rawseti(L, -3, ++n);
+	lua_pop(L, 1);
 
 	lua_setfield(L, -2, "PATH");
 	lua_pop(L, 1);

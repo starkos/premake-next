@@ -41,15 +41,7 @@ int pmk_path_getDirectory(lua_State* L)
 }
 
 
-int pmk_path_isAbsolute(lua_State* L)
-{
-	const char* path = luaL_checkstring(L, -1);
-	lua_pushboolean(L, pmk_isAbsolutePath(path));
-	return (1);
-}
-
-
-int pmk_path_kind(lua_State* L)
+int pmk_path_getKind(lua_State* L)
 {
 	const char* path = luaL_checkstring(L, 1);
 
@@ -67,6 +59,14 @@ int pmk_path_kind(lua_State* L)
 		break;
 	}
 
+	return (1);
+}
+
+
+int pmk_path_isAbsolute(lua_State* L)
+{
+	const char* path = luaL_checkstring(L, -1);
+	lua_pushboolean(L, pmk_isAbsolutePath(path));
 	return (1);
 }
 
