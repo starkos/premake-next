@@ -2,7 +2,7 @@
 
 ## The Big Stuff
 
-### Names are now Camel Case
+**Names are now Camel Case**
 
 All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/Camel_case), ex. `string.startswith()` is now `string.startsWith()`. This includes Lua's built-in functions as well, ex. `doFile()` and `loadFile()`. (In previous versions I tried to match Lua's `alllowercase` standard but it only resulted in unreadable code. This isn't assembly language.)
 
@@ -25,8 +25,6 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 - Most of the global state variables have been gathered under a new `_PREMAKE` global: `_PREMAKE.COMMAND`, `_PREMAKE.COMMAND_DIR`, `_PREMAKE.MAIN_SCRIPT`, `_PREMAKE.MAIN_SCRIPT_DIR`, `_PREMAKE.PATH`.
 
 - `premake.path` (now `_PREMAKE.PATH`) is now an array of paths rather than a semicolon separated string. You may also put functions in this list, which are called at file load time to resolve the path to be searched.
-
-- `string.explode` is now `string.split`
 
 
 ## Under the Hood Changes
