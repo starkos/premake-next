@@ -5,9 +5,6 @@
 local m = _PREMAKE.path
 
 
---
--- Retrieve the filename portion of a path, without any extension.
---
 function m.getBaseName(self)
 	local name = m.getName(self)
 	local i = string.findLast(self, '.', true)
@@ -19,9 +16,6 @@ function m.getBaseName(self)
 end
 
 
---
--- Retrieve the filename portion of a path.
---
 function m.getName(self)
 	local i = string.findLast(self, "[/\\]")
 	if i then
@@ -32,4 +26,4 @@ function m.getName(self)
 end
 
 
-return (m)
+return m

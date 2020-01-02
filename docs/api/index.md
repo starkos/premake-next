@@ -12,6 +12,14 @@
 [doFile](doFile.md)<br/>
 [doFileOpt](doFileOpt.md)<br/>
 [loadFile](loadFile.md)<br/>
+[printf](printf.md)<br/>
+
+[options.all](options.all.md)<br/>
+[options.definitionOf](options.definitionOf.md)<br/>
+[options.each](options.each.md)<br/>
+[options.execute](options.execute.md)<br/>
+[options.register](options.register.md)<br/>
+[options.valueOf](options.valueOf.md)<br/>
 
 [os.chdir](os.chdir.md)<br/>
 [os.getCwd](os.getCwd.md)<br/>
@@ -24,6 +32,7 @@
 [path.translate](path.translate.md)<br/>
 
 [premake.callArray](premake.callArray.md)<br/>
+[premake.checkRequired](premake.checkRequired.md)<br/>
 [premake.locateScript](premake.locateScript.md)<br/>
 
 [string.findLast](string.findLast.md)<br/>

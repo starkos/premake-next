@@ -50,3 +50,22 @@ Once registered, the option can be used on the comamnd line, and will appear in 
 ```
 $ premake6 --gfxapi opengl vs2019
 ```
+
+Options may also specify a function to be called if present on the command line.
+
+```lua
+commandLineOption {
+    trigger = '--version',
+    description = 'Display version information',
+    execute = function()
+        print(string.format('Premake Build Script Generator version %s', _PREMAKE.VERSION))
+    end
+}
+
+```
+
+## See Also
+
+* [options.definitionOf](options.definitionOf.md)
+* [options.register](options.register.md)
+* [options.valueOf](options.valueOf.md)

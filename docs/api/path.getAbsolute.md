@@ -4,7 +4,7 @@ Converts a relative path an absolute path.
 
 ```lua
 path = require('path')
-result = path.getabsolute('relativePath', 'relativeTo')
+result = path.getAbsolute('relativePath', 'relativeTo')
 ```
 
 ## Parameters
