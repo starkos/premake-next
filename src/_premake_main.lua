@@ -2,8 +2,8 @@
 -- Premake script-side program entry point.
 ---
 
-local premake = require('premake')
+local main = require('main')
 
 function _premake_main()
-	premake.main()
+	main.run()
 end
