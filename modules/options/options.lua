@@ -2,6 +2,8 @@
 -- Premake command line option handling.
 ---
 
+local p = require('premake')
+
 local m = {}
 
 m._definitions = {}
@@ -16,20 +18,10 @@ function commandLineOption(definition)
 end
 
 
----
--- Register a new command line option.
---
--- @returns
---    If successful, returns `true`. Otherwise returns `false` and an error message.
----
 function m.register(definition)
-	-- validate the new option just a bit
-	local required = { 'trigger', 'description' }
-	for i = 1, #required do
-		local field = required[i]
-		if not definition[field] then
-			return false, string.format('missing required value "%s"', field)
-		end
+	local ok, err = p.checkRequired(definition, 'trigger', 'description')
+	if not ok then
+		return false, err
 	end
 
 	-- store it
@@ -42,14 +34,6 @@ function m.register(definition)
 end
 
 
----
--- Iterate over all command line arguments, including those that do not match
--- any registered option definition. Will use best guess as to the value of
--- any unregistered options.
---
--- @returns
---    Each call return the next trigger-value pair, until `nil`.
----
 function m.all()
 	local i = 0
 
@@ -76,22 +60,11 @@ function m.all()
 end
 
 
----
--- Return the definition associated with specific trigger, as provided to `register()`.
----
 function m.definitionOf(trigger)
 	return m._definitions[trigger]
 end
 
 
-
----
--- Iterate each of the valid options present in the current command line arguments.
--- Skips over any args which do not match a registered option.
---
--- @returns
---    Each call return the next trigger-value pair, until `nil`.
----
 function m.each()
 	local it = m.all()
 
@@ -108,10 +81,6 @@ function m.each()
 end
 
 
----
--- Calls the function associated with the specified option, if one exists,
--- passing in the provided value.
----
 function m.execute(trigger, value)
 	local def = m.definitionOf(trigger)
 	if def and def.execute then
@@ -120,10 +89,6 @@ function m.execute(trigger, value)
 end
 
 
-
----
--- Return an array of registered option definitions, sorted by trigger.
----
 function m.getDefinitions()
 	local result = {}
 
@@ -139,10 +104,6 @@ function m.getDefinitions()
 end
 
 
----
--- Returns true if the trigger represents an action, as opposed to an option.
--- Options start with leading dashes.
----
 function m.getKind(trigger)
 	if string.startsWith(trigger, '-') then
 		return 'option'
@@ -152,13 +113,6 @@ function m.getKind(trigger)
 end
 
 
----
--- Validate the current command line arguments against the collection of
--- registered option definitions.
---
--- @returns
---    True if successful, else false and an error message.
----
 function m.validate()
 	for trigger, _ in m.all() do
 		local def = m.definitionOf(trigger)
@@ -170,9 +124,6 @@ function m.validate()
 end
 
 
----
--- Return the command line value associated with a specific trigger, if any.
----
 function m.valueOf(trigger)
 	if not m._values then
 		m._values = m._parseArgs()

@@ -1,5 +1,8 @@
 ---
 -- The main program logic flow.
+--
+-- Bootstraps the core APIs used by the rest of the application, and implements
+-- the program entry point and overall execution flow.
 ---
 
 local options = require('options')

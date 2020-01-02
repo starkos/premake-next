@@ -1,8 +1,5 @@
 ---
--- The main Premake module.
---
--- Bootstraps the core APIs used by the rest of the application, and implements
--- the program entry point and overall execution flow.
+-- Premake helper APIs.
 ---
 
 local m = _PREMAKE.premake
@@ -12,22 +9,10 @@ _PREMAKE.COPYRIGHT = 'Copyright (C) 2002-2020 Jason Perkins and the Premake Proj
 _PREMAKE.WEBSITE = 'https://github.com/starkos/premake-next'
 
 
--- load extensions to Lua
 doFile('_G.lua')
 doFile('string.lua')
 
 
----
--- Call a list of functions.
---
--- @param funcs
---    The array of functions to be called, or a function that can be called
---    to build and return the list. If this is a function, it will be called
---    with the provided optional arguments (below).
--- @param ...
---    An optional set of arguments to be passed to each of the functions as
---    as they are called.
----
 function m.callArray(funcs, ...)
 	if type(funcs) == 'function' then
 		funcs = funcs(...)
@@ -37,6 +22,18 @@ function m.callArray(funcs, ...)
 			funcs[i](...)
 		end
 	end
+end
+
+
+function m.checkRequired(obj, ...)
+	local n = select('#', ...)
+	for i = 1, n do
+		local field = select(i, ...)
+		if not obj[field] then
+			return false, string.format('missing required value `%s`', field)
+		end
+	end
+	return true
 end
 
 
