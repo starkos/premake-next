@@ -3,8 +3,8 @@
 Locate a file on [Premake's script search path](_PREMAKE.PATH.md).
 
 ```lua
-local premake = require('premake')
-local path = premake.locateScript('filename')
+premake = require('premake')
+path = premake.locateScript('filename')
 ```
 
 ## Parameters

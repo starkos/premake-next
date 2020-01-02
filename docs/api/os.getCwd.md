@@ -3,7 +3,7 @@
 Gets the current working directory.
 
 ```lua
-local path = os.getCwd()
+path = os.getCwd()
 ```
 
 ## Parameters

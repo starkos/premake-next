@@ -12,6 +12,14 @@ doFile('file', ...)
 
 `...` is an optional list of arguments to pass to the script.
 
+## Return Value
+
+If the executed script returns a value, that value will be returned to the called.
+
+## Availability
+
+Premake 6.0 or later (available in base Lua as `dofile`).
+
 ## See Also
 
 - [doFileOpt](doFileOpt.md)

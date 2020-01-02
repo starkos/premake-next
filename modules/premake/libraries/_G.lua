@@ -2,6 +2,7 @@
 -- Extensions to Lua's global functions.
 ---
 
+
 ---
 -- Extend Lua's `dofile()` function to accept a variable list of arguments
 -- to be passed into the called script.
@@ -44,4 +45,12 @@ function doFileOpt(filename, ...)
 	if chunk then
 		return (chunk(...))
 	end
+end
+
+
+--
+-- A shortcut for printing formatted output.
+--
+function printf(msg, ...)
+	print(string.format(msg or '', ...))
 end

@@ -21,4 +21,3 @@ Premake 4.0 or later.
 ## See Also
 
 - [os.getCwd](os.getCwd.md)
-- os.mkdir

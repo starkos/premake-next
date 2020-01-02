@@ -10,13 +10,13 @@ An exploratory take on new ideas and approaches for the [Premake build tool](htt
 
 I’m trying out new ideas for Premake (see **[“Why “next”?](#why-next)**, below).
 
-Current status: I’ve ripped out enough of Premake5 to bootstrap and launch system and user scripts, and given it all a good polish. I’m now diving into the truly novel stuff, starting with configuration scripting and storage.
+Current status: I've ported over enough of Premake5 to bootstrap and execute user commands, and given it all a good polish. I'll be porting over the unit test framework next, and then diving into the truly novel stuff, starting with configuration scripting and storage.
 
-See **[Changes Since v5](https://github.com/starkos/premake-next/blob/master/docs/changes-since-v5.md)** for a list of the improvements made so far.
+See **[Changes Since v5](docs/Changes-Since-v5.md)** for a list of the improvements made so far. See [the full documentation](docs/Home.md) to get a sense of what's available so far.
 
 ## Why “next”?
 
-While working to fix some of Premake’s more fundamental issues I’ve come to the conclusion that its project configuration system—the heart of the program which stores and queries the scripted project settings—is fatally flawed. It’s still using the same Visual Studio-centric models that I set out in Premake 1.0, and they’ve hit the limits of what they are able to express. In particular:
+While working to fix some of Premake’s more fundamental issues I’ve come to the conclusion that its project configuration system—the heart of the program which stores and queries the scripted project settings—is fatally flawed. It’s still using the same Visual Studio-centric models that I set out in Premake 1.0, and they’ve hit the limits of what they are able to express.
 
 - It's too inflexible, and can't represent all of the possible formats that it needs to support (Makefile-style projects; anything that supports complex configuration at the workspace level)
 

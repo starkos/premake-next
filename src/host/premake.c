@@ -5,13 +5,14 @@
 #define PREMAKE_MAIN_ENTRY_NAME    "_premake_main"
 
 static int  getCurrentScriptDir(lua_State* L);
+static const char* getScriptsPath(int argc, const char** argv);
 static void installModuleLoader(lua_State* L);
 static void registerGlobalLibrary(lua_State* L, const char* name, const luaL_Reg* functions);
 static void registerInternalLibrary(lua_State* L, const char* name, const luaL_Reg* functions);
+static void reportScriptError(Premake* pmk);
 static void setArgsGlobal(lua_State* L, int argc, const char** argv);
 static void setCommandGlobals(lua_State* L, const char* argv0);
 static void setSearchPath(lua_State* L, int argc, const char** argv);
-static void reportScriptError(Premake* pmk);
 
 
 static const luaL_Reg g_functions[] = {
@@ -69,6 +70,10 @@ Premake* premake_init(premake_ErrorHandler onError)
 	/* Create a "_PREMAKE" global to hold meta about the run */
 	lua_newtable(L);
 	lua_setglobal(L, "_PREMAKE");
+
+	/* Add some metadata to the _PREMAKE global */
+	lua_pushstring(L, LUA_COPYRIGHT);
+	lua_setglobal(L, "_COPYRIGHT");
 
 	/* Publish Premake's extensions to the standard libraries */
 	luaL_openlibs(L);
@@ -164,9 +169,9 @@ static void setArgsGlobal(lua_State* L, int argc, const char** argv)
 {
 	lua_newtable(L);
 
-	for (int i = 1; i < argc; ++i) {
+	for (int i = 0; i < argc; ++i) {
 		lua_pushstring(L, argv[i]);
-		lua_rawseti(L, -2, luaL_len(L, -2) + 1);
+		lua_rawseti(L, -2, i);
 	}
 
 	lua_setglobal(L, "_ARGS");
@@ -205,12 +210,12 @@ static void setSearchPath(lua_State* L, int argc, const char** argv)
 	lua_getglobal(L, "_PREMAKE");
 	lua_newtable(L);
 
-	/* the current value of _SCRIPT_DIR; enables script-relative paths */
+	/* a function returning current value of _SCRIPT_DIR; enables script-relative paths */
 	lua_pushcfunction(L, getCurrentScriptDir);
 	lua_rawseti(L, -2, ++n);
 
 	/* the path specified by --scripts, if present */
-	const char* scripts = pmk_getOptionValue("scripts", argc, argv);
+	const char* scripts = getScriptsPath(argc, argv);
 	if (scripts != NULL) {
 		lua_pushstring(L, scripts);
 		lua_rawseti(L, -2, ++n);
@@ -263,6 +268,26 @@ static void setSearchPath(lua_State* L, int argc, const char** argv)
 
 	lua_setfield(L, -2, "PATH");
 	lua_pop(L, 1);
+}
+
+
+static const char* getScriptsPath(int argc, const char** argv)
+{
+	for (int i = 0; i < argc; ++i)
+	{
+		const char* arg = argv[i];
+
+		if (strcmp("--scripts", arg) == 0) {
+			return (argv[i + 1]);
+		}
+
+		if (strncmp("--scripts=", arg, 10) == 0) {
+			const char* splitAt = strchr(arg, '=');
+			return (splitAt + 1);
+		}
+	}
+
+	return (NULL);
 }
 
 

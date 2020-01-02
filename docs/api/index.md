@@ -8,6 +8,7 @@
 [_SCRIPT_DIR](_SCRIPT_DIR.md)<br/>
 [_USER_HOME_DIR](_USER_HOME_DIR.md)<br/>
 
+[commandLineOption](commandLineOption.md)<br/>
 [doFile](doFile.md)<br/>
 [doFileOpt](doFileOpt.md)<br/>
 [loadFile](loadFile.md)<br/>
@@ -22,6 +23,9 @@
 [path.isAbsolute](path.isAbsolute.md)<br/>
 [path.translate](path.translate.md)<br/>
 
+[premake.callArray](premake.callArray.md)<br/>
 [premake.locateScript](premake.locateScript.md)<br/>
 
+[string.findLast](string.findLast.md)<br/>
+[string.split](string.split.md)<br/>
 [string.startsWith](string.startsWith.md)<br/>
