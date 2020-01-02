@@ -12,6 +12,10 @@ doFileOpt('file', ...)
 
 `...` is an optional list of arguments to pass to the script.
 
+## Availability
+
+Premake 6.0 or later (available in 5.0 or later as `dofileopt`).
+
 ## See Also
 
 - [doFile](doFile.md)

@@ -2,14 +2,18 @@
 
 ## The Big Stuff
 
-**Names are now Camel Case**
+#### Names are now Camel Case
 
 All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/Camel_case), ex. `string.startswith()` is now `string.startsWith()`. This includes Lua's built-in functions as well, ex. `doFile()` and `loadFile()`. (In previous versions I tried to match Lua's `alllowercase` standard but it only resulted in unreadable code. This isn't assembly language.)
+
+#### Simplified command line option model
+
+The distinction between "options" and "actions" has been removed. All command line options now define a trigger, description, etc. and provide an `execute()` function. Options are evaluated in the order specified on the command line. The `_OPTIONS` global has been removed; use the `options` module if direct programmatic access is needed.
 
 
 ## Smaller improvements
 
-- **No longer modifies the Lua runtime.** This means that down the road we can configure it to optionally link against your system's Lua library, allowing it to interoperate with third-part Lua binary modules.
+- **No longer modifies the Lua runtime.** This opens up the possibility of linking Premake against the system's Lua library, enabling it to interoperate with third-party Lua binary modules.
 
 - **Now respects and maintains the current working directory.** Previous versions would set the working directory to the location of the last loaded script file.
 
@@ -19,6 +23,8 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 
 
 ## API Changes
+
+- As mentioned above, all APIs now use camel-case: `string.startswith` is now `string.startsWith`, etc.
 
 - `doFile()` now accepts an optional list of arguments to pass to the called script
 

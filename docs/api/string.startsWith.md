@@ -3,7 +3,7 @@
 Returns `true` if the given string starts with the provided sequence.
 
 ```lua
-local result string.startsWith('haystack', 'needle')
+result = string.startsWith('haystack', 'needle')
 ```
 
 ## Parameters
@@ -16,6 +16,6 @@ local result string.startsWith('haystack', 'needle')
 
 `true` if `haystack` starts with `needle`, and `false` otherwise.
 
-### Availability ###
+## Availability
 
-Premake 6.0 or later (available in 4.0 or later as `string.startsWith`).
+Premake 6.0 or later (available in 4.0 or later as `string.startswith`).

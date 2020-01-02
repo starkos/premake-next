@@ -3,7 +3,7 @@
 Checks for the existence of file.
 
 ```lua
-local result = os.isFile('path')
+result = os.isFile('path')
 ```
 
 ## Parameters

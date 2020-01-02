@@ -3,8 +3,8 @@
 Determines if a given file system path is absolute.
 
 ```lua
-local path = require('path')
-local result = path.isAbsolute('value')
+path = require('path')
+result = path.isAbsolute('value')
 ```
 
 ## Parameters
@@ -19,6 +19,6 @@ local result = path.isAbsolute('value')
 
 Premake 6.0 or later (available in 4.0 or later as `path.isabsolute`).
 
-### See Also ###
+## See Also
 
 * [path.getAbsolute](path.getAbsolute.md)

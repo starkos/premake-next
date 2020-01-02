@@ -3,8 +3,8 @@
 Converts the file separators in a path.
 
 ```lua
-local path = require('path')
-local result = path.translate('value', 'separator')
+path = require('path')
+result = path.translate('value', 'separator')
 ```
 
 ## Parameters
@@ -17,6 +17,6 @@ local result = path.translate('value', 'separator')
 
 The translated path.
 
-### Availability ###
+## Availability
 
 Premake 4.0 or later.

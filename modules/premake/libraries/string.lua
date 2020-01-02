@@ -2,6 +2,26 @@
 -- Overrides and extensions to Lua's `string` library.
 ---
 
+
+--
+-- Find and return the index of the last instance of a pattern in a string.
+--
+function string.findLast(self, pattern, plain)
+	local i = 0
+
+	repeat
+		local next = string.find(self, pattern, i + 1, plain)
+		if next then
+			i = next
+		end
+	until (not next)
+
+	if i > 0 then
+		return i
+	end
+end
+
+
 ---
 -- Split a string on boundaries formed by `pattern`.
 --

@@ -74,7 +74,6 @@ int  pmk_doFile(lua_State* L, const char* filename);
 void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
 void pmk_getDirectory(char* result, const char* value);
-const char* pmk_getOptionValue(const char* flag, int argc, const char** argv);
 int  pmk_isAbsolutePath(const char* path);
 int  pmk_isFile(const char* filename);
 int  pmk_load(lua_State* L, const char* filename);
@@ -86,8 +85,6 @@ const char* pmk_locateModule(char* result, lua_State* L, const char* moduleName)
 const char* pmk_locateScript(char* result, lua_State* L, const char* filename);
 int  pmk_moduleLoader(lua_State* L);
 int  pmk_pathKind(const char* path);
-const char* pmk_parseOptionKey(const char* value, char* buffer);
-const char* pmk_parseOptionValue(const char* value);
 int  pmk_pcall(lua_State* L, int nargs, int nresults);
 const char** pmk_searchPaths(lua_State* L);
 void pmk_translatePath(char* result, const char* value, const char separator);

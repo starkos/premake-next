@@ -3,7 +3,7 @@
 Load a Lua script file.
 
 ```lua
-local chunk = loadFile('file')
+chunk = loadFile('file')
 ```
 
 ## Parameters
@@ -13,6 +13,10 @@ local chunk = loadFile('file')
 ## Return Value
 
 If successful, returns a function that, when run, executes the contents of the script file. On failure, returns `nil` and an error message.
+
+## Availability
+
+Premake 6.0 or later (available in base Lua as `loadfile`).
 
 ## See Also
 
