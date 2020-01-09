@@ -10,7 +10,7 @@ An exploratory take on new ideas and approaches for the [Premake build tool](htt
 
 I’m trying out new ideas for Premake (see **[“Why “next”?](#why-next)**, below).
 
-Current status: I've ported over enough of Premake5 to bootstrap and execute user commands, and given it all a good polish. I'll be porting over the unit test framework next, and then diving into the truly novel stuff, starting with configuration scripting and storage.
+Current status: I've ported over enough of Premake5 to bootstrap, execute user commands, and run unit tests. I've given most of it a good polish. The next step is to bring a new configuration scripting and storage system online, which will be the first truly novel bits.
 
 See **[Changes Since v5](docs/Changes-Since-v5.md)** for a list of the improvements made so far. See [the full documentation](docs/Home.md) to get a sense of what's available so far.
 

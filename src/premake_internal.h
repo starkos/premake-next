@@ -61,21 +61,31 @@
 #define PMK_PATH_ABSOLUTE     (1)
 #define PMK_PATH_RELATIVE     (2)
 
-struct Premake {
+struct pmk_State {
 	lua_State* L;
-	premake_ErrorHandler onError;
+	pmk_ErrorHandler onError;
 };
+
+
+typedef struct MatchInfo Matcher;
 
 typedef int (*LuaLoader)(lua_State* L, const char* filename, const char* mode);
 
-
+void  pmk_bufferClose(pmk_Buffer* b);
+const char* pmk_bufferContents(pmk_Buffer* b);
+pmk_Buffer* pmk_bufferInit();
+size_t pmk_bufferLen(pmk_Buffer* b);
+void pmk_bufferPrintf(pmk_Buffer* b, const char* fmt, ...);
+void pmk_bufferPuts(pmk_Buffer* b, const char* ptr, size_t len);
 int  pmk_chdir(const char* path);
 int  pmk_doFile(lua_State* L, const char* filename);
 void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
 void pmk_getDirectory(char* result, const char* value);
+int  pmk_getTextColor();
 int  pmk_isAbsolutePath(const char* path);
 int  pmk_isFile(const char* filename);
+void pmk_joinPath(char* root, const char* segment);
 int  pmk_load(lua_State* L, const char* filename);
 int  pmk_loadFile(lua_State* L, const char* filename);
 int  pmk_loader(lua_State* L, const char* filename, const char* mode, LuaLoader lua_loader);
@@ -83,8 +93,14 @@ const char* pmk_locate(char* result, const char* name, const char* paths[], cons
 void pmk_locateExecutable(char* result, const char* argv0);
 const char* pmk_locateModule(char* result, lua_State* L, const char* moduleName);
 const char* pmk_locateScript(char* result, lua_State* L, const char* filename);
+void pmk_matchDone(Matcher* matcher);
+int  pmk_matchName(Matcher* matcher, char* buffer, size_t bufferSize);
+int  pmk_matchNext(Matcher* matcher);
+Matcher* pmk_matchStart(const char* directory, const char* pattern);
 int  pmk_moduleLoader(lua_State* L);
+void pmk_normalize(char* result, const char* path);
 int  pmk_pathKind(const char* path);
+int  pmk_patternFromWildcards(char* result, int maxLen, const char* value, int isPath);
 int  pmk_pcall(lua_State* L, int nargs, int nresults);
 const char** pmk_searchPaths(lua_State* L);
 void pmk_translatePath(char* result, const char* value, const char separator);
@@ -93,18 +109,27 @@ void pmk_translatePathInPlace(char* value, const char sep);
 /* Global extensions */
 
 int g_doFile(lua_State* L);
+int g_forceRequire(lua_State* L);
 int g_loadFile(lua_State* L);
 int g_loadFileOpt(lua_State* L);
+
+/* String buffer extensions */
+
+int pmk_buffer_new(lua_State* L);
+int pmk_buffer_close(lua_State* L);
+int pmk_buffer_tostring(lua_State* L);
+int pmk_buffer_write(lua_State* L);
+int pmk_buffer_writeln(lua_State* L);
 
 /* OS library extensions */
 
 int pmk_os_chdir(lua_State* L);
 int pmk_os_getCwd(lua_State* L);
 int pmk_os_isFile(lua_State* L);
-
-/* String library extensions */
-
-int pmk_string_startsWith(lua_State* L);
+int pmk_os_matchDone(lua_State* L);
+int pmk_os_matchName(lua_State* L);
+int pmk_os_matchNext(lua_State* L);
+int pmk_os_matchStart(lua_State* L);
 
 /* Path module functions */
 
@@ -112,8 +137,20 @@ int pmk_path_getAbsolute(lua_State* L);
 int pmk_path_getDirectory(lua_State* L);
 int pmk_path_getKind(lua_State* L);
 int pmk_path_isAbsolute(lua_State* L);
+int pmk_path_join(lua_State* L);
+int pmk_path_normalize(lua_State* L);
 int pmk_path_translate(lua_State* L);
 
 /* Premake module function */
 
+int pmk_premake_locateModule(lua_State* L);
 int pmk_premake_locateScript(lua_State* L);
+
+/* String library extensions */
+
+int pmk_string_patternFromWildcards(lua_State* L);
+int pmk_string_startsWith(lua_State* L);
+
+/* Terminal output functions */
+
+int pmk_terminal_textColor(lua_State* L);

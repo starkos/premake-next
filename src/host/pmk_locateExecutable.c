@@ -94,11 +94,12 @@ void pmk_locateExecutable(char* result, const char* argv0)
 		const char* separator = ":";
 #endif
 
-		const char* segment;
-		while ((segment = strsep(&segments, separator)) != NULL) {
+		const char* segment = strtok(segments, separator);
+		while (segment != NULL) {
 			strcpy(result, segment);
 			strcat(result, "/");
 			strcat(result, argv0);
+			segment = strtok(NULL, separator);
 			if (pmk_isFile(result)) {
 				path = result;
 				break;

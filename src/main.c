@@ -5,16 +5,16 @@ static void errorHandler(const char* message, const char* traceback);
 
 int main(int argc, const char** argv)
 {
-	Premake* pmk = premake_init(errorHandler);
-	if (pmk == NULL) {
+	pmk_State* P = pmk_init(errorHandler);
+	if (P == NULL) {
 		return (-1);
 	}
 
-	if (premake_execute(pmk, argc, argv) != OKAY) {
+	if (pmk_execute(P, argc, argv) != OKAY) {
 		return (-1);
 	}
 
-	premake_close(pmk);
+	pmk_close(P);
 	return (0);
 }
 
@@ -29,5 +29,6 @@ static void errorHandler(const char* message, const char* traceback)
 	(void) traceback;
 #endif
 
+	pmk_setTextColor(PMK_COLOR_ERROR);
 	printf("Error: %s\n", message);
 }

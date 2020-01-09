@@ -14,7 +14,7 @@ int pmk_getCwd(char* result)
 	if (GetCurrentDirectoryW(PATH_MAX, wideBuffer) == 0) {
 		return (FALSE);
 	}
-	if (WideCharToMultiByte(CP_UTF8, 0, wideBuffer, -1, result, (int)size, NULL, NULL) == 0) {
+	if (WideCharToMultiByte(CP_UTF8, 0, wideBuffer, -1, result, PATH_MAX, NULL, NULL) == 0) {
 		return (FALSE);
 	}
 	pmk_translatePathInPlace(result, '/');

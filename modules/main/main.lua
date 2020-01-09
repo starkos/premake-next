@@ -48,6 +48,11 @@ commandLineOption {
 }
 
 commandLineOption {
+	trigger = '--verbose',
+	description = 'Generate extra debug text output'
+}
+
+commandLineOption {
 	trigger = '--version',
 	description = 'Display version information',
 	execute = function()

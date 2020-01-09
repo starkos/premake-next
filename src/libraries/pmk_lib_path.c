@@ -71,6 +71,36 @@ int pmk_path_isAbsolute(lua_State* L)
 }
 
 
+int pmk_path_join(lua_State* L)
+{
+	char buffer[PATH_MAX] = { '\0' };
+
+	int argc = lua_gettop(L);
+
+	for (int i = 1; i <= argc; ++i) {
+		if (lua_isnil(L, i))
+			continue;
+
+		const char* part = luaL_checkstring(L, i);
+		pmk_joinPath(buffer, part);
+	}
+
+	lua_pushstring(L, buffer);
+	return (1);
+}
+
+
+int pmk_path_normalize(lua_State* L)
+{
+	char buffer[PATH_MAX];
+
+	const char* path = luaL_checkstring(L, 1);
+	pmk_normalize(buffer, path);
+	lua_pushstring(L, buffer);
+	return (1);
+}
+
+
 int pmk_path_translate(lua_State* L)
 {
 	char buffer[PATH_MAX];

@@ -2,15 +2,13 @@
 -- Premake helper APIs.
 ---
 
+local buffer = require('buffer')
+
 local m = _PREMAKE.premake
 
 _PREMAKE.VERSION = '6.0.0-next'
 _PREMAKE.COPYRIGHT = 'Copyright (C) 2002-2020 Jason Perkins and the Premake Project'
 _PREMAKE.WEBSITE = 'https://github.com/starkos/premake-next'
-
-
-doFile('_G.lua')
-doFile('string.lua')
 
 
 function m.callArray(funcs, ...)
@@ -25,6 +23,29 @@ function m.callArray(funcs, ...)
 end
 
 
+local _captured
+
+function m.capture(fn)
+	local previousCapture = _captured
+
+	_captured = buffer.new()
+	fn()
+	local captured = buffer.close(_captured)
+
+	_captured = previousCapture
+	return captured
+end
+
+
+function m.captured()
+	if _captured then
+		return buffer.tostring(_captured)
+	else
+		return ''
+	end
+end
+
+
 function m.checkRequired(obj, ...)
 	local n = select('#', ...)
 	for i = 1, n do
@@ -34,6 +55,14 @@ function m.checkRequired(obj, ...)
 		end
 	end
 	return true
+end
+
+
+local _eol
+
+function m.eol(newValue)
+	_eol = newValue or _eol
+	return _eol
 end
 
 

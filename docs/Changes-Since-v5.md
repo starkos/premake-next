@@ -6,10 +6,6 @@
 
 All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/Camel_case), ex. `string.startswith()` is now `string.startsWith()`. This includes Lua's built-in functions as well, ex. `doFile()` and `loadFile()`. (In previous versions I tried to match Lua's `alllowercase` standard but it only resulted in unreadable code. This isn't assembly language.)
 
-#### Simplified command line option model
-
-The distinction between "options" and "actions" has been removed. All command line options now define a trigger, description, etc. and provide an `execute()` function. Options are evaluated in the order specified on the command line. The `_OPTIONS` global has been removed; use the `options` module if direct programmatic access is needed.
-
 
 ## Smaller improvements
 
@@ -19,7 +15,9 @@ The distinction between "options" and "actions" has been removed. All command li
 
 - **System script runs earlier.** The system script is now run earlier in the bootstrap process, enabling third-party modules more opportunities to modify that process.
 
-- **Improved parsing of command line options.** You can now use either an equals sign or a space to separate flags from values, ex. `--file=premake6.lua` or `--file premake6.lua`.
+- **Improved command line option model and parsing.** The distinction between "options" and "actions" has been removed. All options may now specify an `execute()` method. The "=" is now optional when assigning values from the command line. The `_OPTIONS` global has been removed; use the `options` module for direct programmatic access.
+
+- **Preload magic replaced with `require()`.** Previously only core modules could register command line options and other settings on startup without actually loading the entire module. Modules may now include a `register.lua` script which can be loaded with `register('moduleName')`. See [the testing module](../modules/testing) for an example.
 
 
 ## API Changes
@@ -40,3 +38,14 @@ The distinction between "options" and "actions" has been removed. All command li
 - Documentation is now stored in a `docs/` folder in the main repository. This allows it to be authored alongside the code, and reviewed and approved as part of the normal pull request process.
 
 - The internal C APIs are now faster (using local buffers instead of the Lua stack) and use more consistent function signatures.
+
+
+## Unit Testing Module Changes
+
+- **Name changed from `self-test` to `testing`**
+
+- **Improved `--test-only` option.** Now supports the "*" wildcard and multiple, comma-separated patterns, ex. `--test-only="string,os"`
+
+- **Assertions now use camel-case.** Like all other APIs; `test.isEqual`
+
+- **Quieter default output.** The detailed test output is now muted by default; use the `--verbose` command line option to display.
