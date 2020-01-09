@@ -9,7 +9,7 @@ static const char* getScriptsPath(int argc, const char** argv);
 static void installModuleLoader(lua_State* L);
 static void registerGlobalLibrary(lua_State* L, const char* name, const luaL_Reg* functions);
 static void registerInternalLibrary(lua_State* L, const char* name, const luaL_Reg* functions);
-static void reportScriptError(Premake* pmk);
+static void reportScriptError(pmk_State* P);
 static void setArgsGlobal(lua_State* L, int argc, const char** argv);
 static void setCommandGlobals(lua_State* L, const char* argv0);
 static void setSearchPath(lua_State* L, int argc, const char** argv);
@@ -18,9 +18,19 @@ static void setSearchPath(lua_State* L, int argc, const char** argv);
 static const luaL_Reg g_functions[] = {
 	{ "dofile", g_doFile },
 	{ "doFile", g_doFile },
+	{ "forceRequire", g_forceRequire },
 	{ "loadfile", g_loadFile },
 	{ "loadFile", g_loadFile },
 	{ "loadFileOpt", g_loadFileOpt },
+	{ NULL, NULL }
+};
+
+static const luaL_Reg buffer_functions[] = {
+	{ "new", pmk_buffer_new },
+	{ "close", pmk_buffer_close },
+	{ "tostring", pmk_buffer_tostring },
+	{ "write", pmk_buffer_write },
+	{ "writeln", pmk_buffer_writeln },
 	{ NULL, NULL }
 };
 
@@ -28,6 +38,10 @@ static const luaL_Reg os_functions[] = {
 	{ "chdir", pmk_os_chdir },
 	{ "getCwd", pmk_os_getCwd },
 	{ "isFile", pmk_os_isFile },
+	{ "matchDone", pmk_os_matchDone },
+	{ "matchName", pmk_os_matchName },
+	{ "matchNext", pmk_os_matchNext },
+	{ "matchStart", pmk_os_matchStart },
 	{ NULL, NULL }
 };
 
@@ -36,27 +50,36 @@ static const luaL_Reg path_functions[] = {
 	{ "getDirectory", pmk_path_getDirectory },
 	{ "getKind", pmk_path_getKind },
 	{ "isAbsolute", pmk_path_isAbsolute },
+	{ "join", pmk_path_join },
+	{ "normalize", pmk_path_normalize },
 	{ "translate", pmk_path_translate },
 	{ NULL, NULL }
 };
 
 static const luaL_Reg premake_functions[] = {
+	{ "locateModule", pmk_premake_locateModule },
 	{ "locateScript", pmk_premake_locateScript },
 	{ NULL, NULL }
 };
 
 static const luaL_Reg string_functions[] = {
+	{ "patternFromWildcards", pmk_string_patternFromWildcards},
 	{ "startsWith", pmk_string_startsWith },
 	{ NULL, NULL }
 };
 
+static const luaL_Reg terminal_functions[] = {
+	{ "textColor", pmk_terminal_textColor },
+	{ NULL, NULL }
+};
 
-Premake* premake_init(premake_ErrorHandler onError)
+
+pmk_State* pmk_init(pmk_ErrorHandler onError)
 {
 	lua_State* L = luaL_newstate();
 
 	/* Set up a state object to keep track of things */
-	Premake* pmk = (Premake*)malloc(sizeof(struct Premake));
+	pmk_State* pmk = (pmk_State*)malloc(sizeof(struct pmk_State));
 	pmk->L = L;
 	pmk->onError = onError;
 
@@ -82,8 +105,10 @@ Premake* premake_init(premake_ErrorHandler onError)
 	registerGlobalLibrary(L, "os", os_functions);
 	registerGlobalLibrary(L, "string", string_functions);
 
+	registerInternalLibrary(L, "buffer", buffer_functions);
 	registerInternalLibrary(L, "path", path_functions);
 	registerInternalLibrary(L, "premake", premake_functions);
+	registerInternalLibrary(L, "terminal", terminal_functions);
 
 	/* Install Premake's module locator */
 	installModuleLoader(L);
@@ -92,16 +117,16 @@ Premake* premake_init(premake_ErrorHandler onError)
 }
 
 
-void premake_close(Premake* pmk)
+void pmk_close(pmk_State* P)
 {
-	lua_close(pmk->L);
-	free(pmk);
+	lua_close(P->L);
+	free(P);
 }
 
 
-int premake_execute(Premake* pmk, int argc, const char** argv)
+int pmk_execute(pmk_State* P, int argc, const char** argv)
 {
-	lua_State* L = pmk->L;
+	lua_State* L = P->L;
 
 	/* Copy command line arguments into _ARGS global */
 	setArgsGlobal(L, argc, argv);
@@ -114,25 +139,25 @@ int premake_execute(Premake* pmk, int argc, const char** argv)
 
 	/* Run the entry point script */
 	if (pmk_doFile(L, PREMAKE_MAIN_SCRIPT_PATH) != OKAY) {
-		reportScriptError(pmk);
+		reportScriptError(P);
 		return (!OKAY);
 	}
 
 	/* Initialization is complete; call the main entry point */
 	lua_getglobal(L, PREMAKE_MAIN_ENTRY_NAME);
 	if (pmk_pcall(L, 0, 1) != OKAY) {
-		reportScriptError(pmk);
+		reportScriptError(P);
 		return (!OKAY);
 	} else {
-		int exitCode = (int)lua_tonumber(pmk->L, -1);
+		int exitCode = (int)lua_tonumber(P->L, -1);
 		return (exitCode);
 	}
 }
 
 
-lua_State* premake_runtime(Premake* pmk)
+lua_State* pmk_luaState(pmk_State* P)
 {
-	return (pmk->L);
+	return (P->L);
 }
 
 
@@ -230,10 +255,11 @@ static void setSearchPath(lua_State* L, int argc, const char** argv)
 	/* any locations specified on PREMAKE6_PATH */
 	char* path = getenv("PREMAKE6_PATH");
 	if (path != NULL) {
-		const char* segment;
-		while ((segment = strsep(&path, ";")) != NULL) {
+		const char* segment = strtok(path, ";");
+		while (segment != NULL) {
 			lua_pushstring(L, segment);
 			lua_rawseti(L, -2, ++n);
+			segment = strtok(NULL, ";");
 		}
 	}
 
@@ -329,12 +355,12 @@ static void installModuleLoader(lua_State* L)
  * Called when a fatal error occurs in a script. Collects information
  * about the error and reports it to the host to handle.
  */
-static void reportScriptError(Premake* pmk)
+static void reportScriptError(pmk_State* P)
 {
 	const char* message;
 	const char* traceback;
 
-	lua_State* L = pmk->L;
+	lua_State* L = P->L;
 
 	if (lua_istable(L, -1)) {
 		/* received a { message, traceback } pair from onRuntimeError() */
@@ -349,7 +375,7 @@ static void reportScriptError(Premake* pmk)
 		traceback = NULL;
 	}
 
-	if (pmk->onError != NULL) {
-		pmk->onError(message, traceback);
+	if (P->onError != NULL) {
+		P->onError(message, traceback);
 	}
 }

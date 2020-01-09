@@ -1,5 +1,5 @@
 ---
--- Premake command line option handling.
+-- Command line option handling.
 ---
 
 local p = require('premake')
@@ -46,7 +46,7 @@ function m.all()
 
 			if not value then
 				local def = m.definitionOf(trigger)
-				if def then
+				if def and def.value then
 					i = i + 1
 					value = _ARGS[i]
 				else
@@ -113,6 +113,11 @@ function m.getKind(trigger)
 end
 
 
+function m.isSet(trigger)
+	return (m.valueOf(trigger) ~= nil)
+end
+
+
 function m.validate()
 	for trigger, _ in m.all() do
 		local def = m.definitionOf(trigger)
@@ -130,7 +135,9 @@ function m.valueOf(trigger)
 	end
 
 	local def = m.definitionOf(trigger)
-	return m._values[def.trigger] or def.default
+	if def then
+		return m._values[def.trigger] or def.default
+	end
 end
 
 

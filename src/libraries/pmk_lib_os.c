@@ -38,3 +38,47 @@ int pmk_os_isFile(lua_State* L)
 	lua_pushboolean(L, pmk_isFile(filename));
 	return (1);
 }
+
+
+int pmk_os_matchDone(lua_State* L)
+{
+	Matcher* matcher = (Matcher*)lua_touserdata(L, 1);
+	pmk_matchDone(matcher);
+	return (0);
+}
+
+
+int pmk_os_matchName(lua_State* L)
+{
+	char buffer[PATH_MAX];
+
+	Matcher* matcher = (Matcher*)lua_touserdata(L, 1);
+	pmk_matchName(matcher, buffer, PATH_MAX);
+	lua_pushstring(L, buffer);
+	return (1);
+}
+
+
+int pmk_os_matchNext(lua_State* L)
+{
+	Matcher* matcher = (Matcher*)lua_touserdata(L, 1);
+	lua_pushboolean(L, pmk_matchNext(matcher));
+	return (1);
+}
+
+
+int pmk_os_matchStart(lua_State* L)
+{
+	const char* directory = luaL_checkstring(L, 1);
+	const char* mask = luaL_checkstring(L, 2);
+	Matcher* matcher = pmk_matchStart(directory, mask);
+
+	if (matcher == NULL) {
+		lua_pushstring(L, "unable to encode mask");
+		lua_error(L);
+		return (0);
+	}
+
+	lua_pushlightuserdata(L, matcher);
+	return (1);
+}
