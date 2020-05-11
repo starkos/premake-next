@@ -7,12 +7,12 @@
 
 int pmk_terminal_textColor(lua_State* L)
 {
-	int color = luaL_optinteger(L, 1, -1);
-	if (color > 0) {
+	if (lua_gettop(L) > 0) {
+		int color = luaL_checkinteger(L, 1);
 		pmk_setTextColor(color);
 	}
 
-	color = pmk_getTextColor();
+	int color = pmk_getTextColor();
 	lua_pushinteger(L, color);
 	return (1);
 }

@@ -23,22 +23,30 @@ m.magenta = 13
 m.yellow = 14
 m.white = 15
 
+m.systemColor = -1
 m.warningColor = m.magenta
 m.errorColor = m.lightRed
 m.infoColor = m.lightCyan
 
 
+function m.printColor(color, format, ...)
+	local originalColor = m.textColor()
+	m.textColor(color)
+	io.write(format)
+	m.textColor(originalColor)
+end
+
+
 function m.pushColor(color)
-	local previousColor = m.getTextColor()
-	table.insert(m._colorStack, previousColor)
-	m.setTextColor(color)
+	table.insert(m._colorStack, m.textColor())
+	m.textColor(color)
 end
 
 
 function m.popColor()
 	if #m._colorStack > 0 then
 		local previousColor = table.remove(m._colorStack)
-		m.setTextColor(previousColor)
+		m.textColor(previousColor)
 	end
 end
 
