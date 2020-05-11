@@ -3,89 +3,88 @@
 -- Use this script to configure the project with Premake5.
 ---
 
-	workspace 'Premake6'
+workspace 'Premake6'
 
-		configurations { 'Release', 'Debug' }
+	configurations { 'Release', 'Debug' }
 
-		flags { 'MultiProcessorCompile' }
-		staticruntime 'On'
-		warnings 'Extra'
+	filter { 'system:windows' }
+		platforms { 'x86', 'x64' }
 
-		filter { 'system:windows' }
-			platforms { 'x86', 'x64' }
 
-		filter 'configurations:Debug'
-			defines '_DEBUG'
-			symbols 'On'
+project 'Premake6'
 
-		filter 'configurations:Release'
-			defines 'NDEBUG'
-			optimize 'Full'
-			flags { 'NoBufferSecurityCheck', 'NoRuntimeChecks' }
+	targetname 'premake6'
+	language 'C'
+	kind 'ConsoleApp'
 
-		filter 'action:vs*'
-			defines { '_CRT_SECURE_NO_DEPRECATE', '_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_WARNINGS' }
+	files
+	{
+		'core/host/src/**.h',
+		'core/host/src/**.c',
+		'core/host/src/**.lua',
+		'core/host/contrib/lua/src/**.h',
+		'core/host/contrib/lua/src/**.c'
+	}
 
-		filter { 'system:windows', 'configurations:Release' }
-			flags { 'NoIncrementalLink', 'LinkTimeOptimization' }
+	removefiles
+	{
+		'core/host/contrib/lua/src/lua.c',
+		'core/host/contrib/lua/src/luac.c',
+		'core/host/contrib/lua/src/print.c',
+		'core/host/contrib/lua/**.lua',
+		'core/host/contrib/lua/etc/*.c'
+	}
 
-	project 'Premake6'
+	includedirs
+	{
+		'core/host/include',
+		'core/host/contrib'
+	}
 
-		targetname 'premake6'
-		language 'C'
-		kind 'ConsoleApp'
+	flags { 'MultiProcessorCompile' }
+	staticruntime 'On'
+	warnings 'Extra'
 
-		files
-		{
-			'src/**.h', 'src/**.c',
-			'src/**.lua',
-			'contrib/lua/src/**.h', 'contrib/lua/src/**.c'
-		}
+	filter 'configurations:Debug'
+		defines '_DEBUG'
+		symbols 'On'
+		targetdir 'bin/debug'
+		debugargs { '--scripts=%{prj.location}/%{path.getrelative(prj.location, prj.basedir)}' }
+		debugdir '.'
 
-		removefiles
-		{
-			'contrib/lua/src/lua.c',
-			'contrib/lua/src/luac.c',
-			'contrib/lua/src/print.c',
-			'contrib/lua/**.lua',
-			'contrib/lua/etc/*.c'
-		}
+	filter 'configurations:Release'
+		defines 'NDEBUG'
+		optimize 'Full'
+		flags { 'NoBufferSecurityCheck', 'NoRuntimeChecks' }
+		targetdir 'bin/release'
 
-		includedirs
-		{
-			'include',
-			'contrib'
-		}
+	filter 'system:windows'
+		links { 'ole32', 'ws2_32', 'advapi32' }
 
-		filter 'configurations:Debug'
-			targetdir 'bin/debug'
-			debugargs { '--scripts=%{prj.location}/%{path.getrelative(prj.location, prj.basedir)}' }
-			debugdir '.'
+	filter { 'system:windows', 'configurations:Release' }
+		flags { 'NoIncrementalLink', 'LinkTimeOptimization' }
 
-		filter 'configurations:Release'
-			targetdir 'bin/release'
+	filter 'system:linux or bsd or hurd'
+		defines { 'LUA_USE_POSIX', 'LUA_USE_DLOPEN' }
+		links { 'm' }
+		linkoptions { '-rdynamic' }
 
-		filter 'system:windows'
-			links { 'ole32', 'ws2_32', 'advapi32' }
+	filter 'system:linux or hurd'
+		links { 'dl', 'rt' }
 
-		filter 'system:linux or bsd or hurd'
-			defines { 'LUA_USE_POSIX', 'LUA_USE_DLOPEN' }
-			links { 'm' }
-			linkoptions { '-rdynamic' }
+	filter 'system:macosx'
+		defines { 'LUA_USE_MACOSX' }
+		links { 'CoreServices.framework', 'Foundation.framework', 'Security.framework', 'readline' }
 
-		filter 'system:linux or hurd'
-			links { 'dl', 'rt' }
+	filter { 'system:macosx', 'action:gmake' }
+		toolset 'clang'
 
-		filter 'system:macosx'
-			defines { 'LUA_USE_MACOSX' }
-			links { 'CoreServices.framework', 'Foundation.framework', 'Security.framework', 'readline' }
+	filter { 'system:solaris' }
+		links { 'm', 'socket', 'nsl' }
 
-		filter { 'system:macosx', 'action:gmake' }
-			toolset 'clang'
+	filter 'system:aix'
+		defines { 'LUA_USE_POSIX', 'LUA_USE_DLOPEN' }
+		links { 'm' }
 
-		filter { 'system:solaris' }
-			links { 'm', 'socket', 'nsl' }
-
-		filter 'system:aix'
-			defines { 'LUA_USE_POSIX', 'LUA_USE_DLOPEN' }
-			links { 'm' }
+	filter 'action:vs*'
+		defines { '_CRT_SECURE_NO_DEPRECATE', '_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_WARNINGS' }

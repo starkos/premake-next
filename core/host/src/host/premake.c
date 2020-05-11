@@ -1,7 +1,7 @@
 #include "../premake_internal.h"
 #include <string.h>
 
-#define PREMAKE_MAIN_SCRIPT_PATH   "src/_premake_main.lua"
+#define PREMAKE_MAIN_SCRIPT_PATH   "core/host/src/_premake_main.lua"
 #define PREMAKE_MAIN_ENTRY_NAME    "_premake_main"
 
 static int  getCurrentScriptDir(lua_State* L);
