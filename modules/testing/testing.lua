@@ -5,14 +5,32 @@
 local options = require('options')
 local p = require('premake')
 local path = require('path')
-local term = require('terminal')
+local terminal = require('terminal')
 
 local m = {}
 
 m._suites = {}
-
 m._onBeforeTestCallbacks = {}
 m._onAfterTestCallbacks = {}
+
+local _isVerbose
+
+
+-- Formatted, colored output
+local INFO = terminal.systemColor
+local GREEN = terminal.lightGreen
+local RED = terminal.red
+
+local function _logVerbose(color, label, format, ...)
+	if _isVerbose then
+		if color then
+			terminal.printColor(color, label)
+			printf(format, ...)
+		else
+			print()
+		end
+	end
+end
 
 
 -- Metatable to attach to suites; detects duplicate test function names
@@ -51,29 +69,9 @@ local function _failureHandler(err)
 end
 
 
--- Formatted, colored output
-local GREEN = term.lightGreen
-local RED = term.red
-
-local function _logf(color, label, format, ...)
-	if options.isSet('--verbose') then
-		if format then
-			if color then
-				term.pushColor(color)
-			end
-			io.write(label)
-			if color then
-				term.popColor()
-			end
-			printf(format, ...)
-		else
-			print()
-		end
-	end
-end
-
-
 function m.runTests()
+	_isVerbose = options.isSet('--verbose')
+
 	m.loadAllTests()
 	m.parseAllowedTestPatterns()
 
@@ -96,15 +94,16 @@ function m.runTests()
 	local totalFailed = #failedTests
 	local elapsedTime = (os.clock() - startTime) * 1000
 
-	_logf(GREEN, '[==========]', ' %d tests from %d test suites', totalTests, totalSuites)
-	_logf(GREEN, '[  PASSED  ]', ' %d tests', totalPassed)
+	_logVerbose(GREEN, '[==========]', ' %d tests from %d test suites', totalTests, totalSuites)
+	_logVerbose(GREEN, '[  PASSED  ]', ' %d tests', totalPassed)
 	if totalFailed > 0 then
-		_logf(RED, '[  FAILED  ]', ' %d tests, listed below:', totalFailed)
+		_logVerbose(RED, '[  FAILED  ]', ' %d tests, listed below:', totalFailed)
 		for i = 1, totalFailed do
-			_logf(RED, '[  FAILED  ]', ' %s', failedTests[i])
+			_logVerbose(RED, '[  FAILED  ]', ' %s', failedTests[i])
 		end
 	end
-	_logf()
+	_logVerbose()
+
 	printf('%d passed, %d failed (%.0f ms total)', totalPassed, totalFailed, elapsedTime)
 
 	if totalFailed > 0 then
@@ -156,7 +155,7 @@ function m.runTestSuite(suiteName, testNames, failedTests)
 	local totalFailed = 0
 	local startTime = os.clock()
 
-	_logf(GREEN, '[----------]', ' %d tests from %s', #testNames, suiteName)
+	_logVerbose(GREEN, '[----------]', ' %d tests from %s', #testNames, suiteName)
 
 	for i = 1, #testNames do
 		if m.runIndividualTest(suiteName, testNames[i]) then
@@ -168,15 +167,15 @@ function m.runTestSuite(suiteName, testNames, failedTests)
 	end
 
 	local elapsedTime = (os.clock() - startTime) * 1000
-	_logf(GREEN, '[----------]', ' %d tests from %s (%.0f ms total)', #testNames, suiteName, elapsedTime)
-	_logf()
+	_logVerbose(GREEN, '[----------]', ' %d tests from %s (%.0f ms total)', #testNames, suiteName, elapsedTime)
+	_logVerbose()
 
 	return totalPassed, totalFailed
 end
 
 
 function m.runIndividualTest(suiteName, testName)
-	_logf(GREEN, '[ RUN      ]', ' %s.%s', suiteName, testName)
+	_logVerbose(GREEN, '[ RUN      ]', ' %s.%s', suiteName, testName)
 	local startTime = os.clock()
 
 	local suite = m._suites[suiteName]
@@ -198,10 +197,10 @@ function m.runIndividualTest(suiteName, testName)
 	local elapsedTime = (os.clock() - startTime) * 1000
 
 	if ok then
-		_logf(GREEN, '[       OK ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
+		_logVerbose(GREEN, '[       OK ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
 	else
-		_logf(RED, '[  FAILED  ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
-		_logf(nil, '', err)
+		_logVerbose(RED, '[  FAILED  ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
+		print(err)
 	end
 
 	return ok

@@ -17,7 +17,7 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 
 - **Improved command line option model and parsing.** The distinction between "options" and "actions" has been removed. All options may now specify an `execute()` method. The "=" is now optional when assigning values from the command line. The `_OPTIONS` global has been removed; use the `options` module for direct programmatic access.
 
-- **Preload magic replaced with `require()`.** Previously only core modules could register command line options and other settings on startup without actually loading the entire module. Modules may now include a `register.lua` script which can be loaded with `register('moduleName')`. See [the testing module](../modules/testing) for an example.
+- **Preload magic replaced with `register()`.** Previously only core modules could register command line options and other settings on startup without actually loading the entire module. Modules may now include a `register.lua` script which can be loaded with `register('moduleName')`. See [the testing module](../modules/testing) for an example.
 
 
 ## API Changes
@@ -29,6 +29,8 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 - Most of the global state variables have been gathered under a new `_PREMAKE` global: `_PREMAKE.COMMAND`, `_PREMAKE.COMMAND_DIR`, `_PREMAKE.MAIN_SCRIPT`, `_PREMAKE.MAIN_SCRIPT_DIR`, `_PREMAKE.PATH`.
 
 - `premake.path` (now `_PREMAKE.PATH`) is now an array of paths rather than a semicolon separated string. You may also put functions in this list, which are called at file load time to resolve the path to be searched.
+
+- `terminal.textColor()` has replaced `getTextColor` and `setTextColor`.
 
 
 ## Under the Hood Changes
