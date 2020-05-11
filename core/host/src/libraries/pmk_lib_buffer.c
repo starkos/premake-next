@@ -1,6 +1,7 @@
 /**
  * Implementations for Premake's `buffer.*` functions.
  */
+
 #include "../premake_internal.h"
 
 

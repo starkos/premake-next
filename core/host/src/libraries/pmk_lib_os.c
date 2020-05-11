@@ -1,6 +1,7 @@
 /**
  * Implementations for Premake's `os.*` functions.
  */
+
 #include "../premake_internal.h"
 
 
