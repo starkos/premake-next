@@ -23,7 +23,8 @@ void pmk_getDirectory(char* result, const char* path)
 	}
 
 	if (len > 0) {
-		strncpy(result, path, len);
+		if (result != path)
+			strncpy(result, path, len);
 		result[len] = '\0';
 	} else {
 		strcpy(result, ".");
