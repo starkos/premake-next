@@ -1,6 +1,7 @@
 /**
  * Implementations for Premake's `path.*` functions.
  */
+
 #include "../premake_internal.h"
 
 

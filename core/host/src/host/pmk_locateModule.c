@@ -15,13 +15,12 @@
  */
 const char* pmk_locateModule(char* result, lua_State* L, const char* moduleName)
 {
-	const char* patterns[] = {
+	static const char* patterns[] = {
+		"core/modules/?/?.lua",
 		"?/?.lua",
 		"modules/?/?.lua",
-		"./modules/?/?.lua",
 		"?.lua",
 		"modules/?.lua",
-		".modules/?.lua",
 		NULL
 	};
 

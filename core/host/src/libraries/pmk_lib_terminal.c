@@ -1,6 +1,7 @@
 /**
  * Implementations for Premake's `terminal.*` functions.
  */
+
 #include "../premake_internal.h"
 
 

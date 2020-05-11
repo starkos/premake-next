@@ -1,6 +1,7 @@
 /**
  * Implementations for Premake's `string.*` functions.
  */
+
 #include "../premake_internal.h"
 #include <string.h>
 

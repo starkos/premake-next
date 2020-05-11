@@ -1,6 +1,7 @@
 /**
  * Implementations for Premake's `premake.*` functions.
  */
+
 #include "../premake_internal.h"
 
 
