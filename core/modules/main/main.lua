@@ -14,51 +14,8 @@ local m = {}
 m.PROJECT_SCRIPT_NAME = 'premake6.lua'
 m.SYSTEM_SCRIPT_NAME = 'premake6-system.lua'
 
-
--- Register the core command line options
-
-commandLineOption {
-	trigger = '--file',
-	description = string.format('Read FILE as a Premake script; default is "%s"', m.PROJECT_SCRIPT_NAME),
-	value = 'FILE',
-	default = m.PROJECT_SCRIPT_NAME
-}
-
-commandLineOption { -- TODO: Move to help module once I've implemented `register()`
-	trigger = '--help',
-	description = 'Display this information',
-	execute = function()
-		local help = require('help')
-		help.printHelp()
-	end
-}
-
-commandLineOption {
-	trigger = '--scripts',
-	description = "Search for additional scripts on the given path",
-	value = 'PATH'
-}
-
-commandLineOption {
-	trigger = '--systemscript',
-	description = string.format('Override default system script (%s)', m.SYSTEM_SCRIPT_NAME),
-	value = 'FILE',
-	default = m.SYSTEM_SCRIPT_NAME
-	-- handled in premake.c
-}
-
-commandLineOption {
-	trigger = '--verbose',
-	description = 'Generate extra debug text output'
-}
-
-commandLineOption {
-	trigger = '--version',
-	description = 'Display version information',
-	execute = function()
-		print(string.format('Premake Build Script Generator version %s', _PREMAKE.VERSION))
-	end
-}
+doFile('./core-fields.lua')
+doFile('./core-options.lua', m)
 
 
 -- Bootstrapping functions, in execution order

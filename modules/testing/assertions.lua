@@ -19,7 +19,7 @@ function m.fail(format, ...)
 		local arg = args[i]
 		if arg == nil then
 			arg = '(nil)'
-		elseif type(arg[i]) == 'table' then
+		elseif type(arg) == 'table' then
 			arg[i] = string.format('{%s}', table.concat(arg[i], ', '))
 		end
 	end
@@ -45,7 +45,7 @@ function m.isEqual(expected, actual, depth)
 			end
 		else
 			if expected ~= actual then
-				m.fail(depth, 'expected %s but was %s', expected, actual or 'nil')
+				m.fail(depth, 'expected `%s` but was `%s`', expected, actual or 'nil')
 			end
 		end
 	end
