@@ -24,6 +24,8 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 
 - As mentioned above, all APIs now use camel-case: `string.startswith` is now `string.startsWith`, etc.
 
+- The Table APIs have been reworked to distinguish between array and dictionary operations.
+
 - `doFile()` now accepts an optional list of arguments to pass to the called script
 
 - Most of the global state variables have been gathered under a new `_PREMAKE` global: `_PREMAKE.COMMAND`, `_PREMAKE.COMMAND_DIR`, `_PREMAKE.MAIN_SCRIPT`, `_PREMAKE.MAIN_SCRIPT_DIR`, `_PREMAKE.PATH`.

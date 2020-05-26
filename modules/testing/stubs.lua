@@ -2,21 +2,19 @@
 -- Stub out problematic Lua functions while tests are running.
 ---
 
-local m = select(1, ...)
-
-local _print
+local test = select(1, ...)
 
 
-local function stub_print()
+local function stub()
 end
 
 
-m.onBeforeTest(function()
-	_print = print
-	print = stub_print
+test.onBeforeTest(function()
+	test.print = print
+	print = stub
 end)
 
 
-m.onAfterTest(function()
-	print = _print
+test.onAfterTest(function()
+	print = test.print
 end)

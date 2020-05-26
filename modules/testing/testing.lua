@@ -33,17 +33,6 @@ local function _logVerbose(color, label, format, ...)
 end
 
 
--- Metatable to attach to suites; detects duplicate test function names
-local _duplicateTestDetector = {
-	__newIndex = function(table, key, value)
-		if table[key] ~= nil then
-			error(string.format('Duplicate test `%s`', key), 2)
-		end
-		table[key] = value
-	end
-}
-
-
 -- Test failure handler
 local function _failureHandler(err)
 	local msg = err
@@ -254,11 +243,26 @@ function m.declare(suiteName)
 		error(string.format('Duplicate test suite `%s`', suiteName), 2)
 	end
 
-	local suite = {
-		_SCRIPT_DIR = _SCRIPT_DIR
-	}
+	local tests = {}
 
-	setmetatable(suite, _duplicateTestDetector)
+	-- duplicate test detector
+	local suite = setmetatable({}, {
+		__index = tests,
+		__newindex = function(table, testName, testFunc)
+			if tests[testName] ~= nil then
+				error(string.format('Duplicate test "%s"', testName), 2)
+			end
+			tests[testName] = testFunc
+		end,
+		__pairs = function (table)
+			return pairs(tests)
+		end,
+		__ipairs = function (table)
+			return ipairs(tests)
+		end
+	})
+
+	suite._SCRIPT_DIR = _SCRIPT_DIR
 
 	m._suites[suiteName] = suite
 	return suite
