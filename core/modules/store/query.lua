@@ -9,10 +9,11 @@ local Field = require('field')
 
 local EMPTY = {}
 
-local ADD = 1
-local REMOVE = 2
-local IGNORE = 3
-
+local UNKNOWN = 'UNKNOWN'
+local ADD = 'ADD'
+local REMOVE = 'REMOVE'
+local IGNORE = 'IGNORE'
+local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
 
 local Query = {}
 
@@ -25,11 +26,6 @@ local _metatable = { -- set up ':' style calling
 		return Query[key]
 	end
 }
-
-
-local function _DEBUG(...)
-	-- test.print(...)
-end
 
 
 ---
@@ -45,16 +41,19 @@ end
 
 function Query.new(blocks, env)
 	return setmetatable({
+		-- The list of blocks to be queried, received from a store, should be considered immutable
+		_sourceBlocks = blocks,
+
+		-- Once `evaluate()` is called, the list of blocks which apply to this query
+		_enabledBlocks = nil,
+
 		-- TODO: explain what these are
 		_outer = nil,
 		_env = Query._normalize(env),
-		_sourceBlocks = blocks,
-		_enabledBlocks = nil,
 		_localScope = EMPTY,
 		_fullScope = EMPTY,
 		_requiredScope = EMPTY,
-		_isInheriting = false,
-		_values = nil
+		_isInheriting = false
 	}, _metatable)
 end
 
@@ -100,23 +99,23 @@ function Query.fetch(self, fieldName)
 	end
 
 	local field = Field.get(fieldName)
-	local value = Field.defaultValue(field)
+	local result = Field.defaultValue(field)
 
 	local blocks = self._enabledBlocks
 	for i = 1, #blocks do
 		local block = blocks[i]
-		local blockValue = block._values[fieldName]
+		local blockValue = block.source[fieldName]
 
 		if blockValue then
-			if block._operation == ADD then
-				value = Field.mergeValues(field, value, blockValue)
+			if block.localOp == ADD then
+				result = Field.mergeValues(field, result, blockValue)
 			else
-				value = Field.removeValues(field, value, blockValue)
+				result = Field.removeValues(field, result, blockValue)
 			end
 		end
 	end
 
-	return value
+	return result
 end
 
 
@@ -172,127 +171,167 @@ end
 ---
 
 function Query._evaluate(self)
-	-- To evaluate a query, actually need to build up two different states. The "local" state contains
-	-- the results for this query. The "inherited" state collects all the results for this query, as
-	-- well as any values that could be inherited from other scopes higher up in the configuration tree
-	-- (e.g. a workspace or project). This inherited state is needed in order to figure out what to do
-	-- with removed values. Hopefully the comments below will help explain.
+	-- To evaluate a query, it is necessary to build up two different states. The "local" state
+	-- contains the results for this query and take into account the chosen scope (workspace, project,
+	-- file configuration, etc.). The "global" state represents all of the settings that _could_
+	-- appear in this query, if inheritance were enabled all the way up to the global scope (global,
+	-- workspace, project, configuration, ...). This global state is needed to correctly interpret
+	-- requests to remove values.
 
-	-- "Blocks" holds a list of all settings blocks that apply to this query; when `fetch()` is called it
-	-- can quickly iterate this list knowing that all of the conditions have already been checked and passed
+	-- "Operations" refer to the intention of a block, one of ADD, REMOVE, IGNORE (the block doesn't
+	-- apply to this query), and UNKNOWN (the block hasn't been evaluated yet).
 
-	-- "Values" holds the values that are accumulated during the process of building the block lists.
+	-- The source blocks are reused by multiple queries so can't be modified; set up my
+	-- own view into the source blocks with results relevant to this query.
 
-	local localBlocks = {}
+	local blocks = {}
+	local sourceBlocks = self._sourceBlocks
+	for i = 1, #sourceBlocks do
+		table.insert(blocks, {
+			source = sourceBlocks[i],
+			localOp = UNKNOWN,
+			globalOp = UNKNOWN
+		})
+	end
+
+	-- These hold the values that have been accumulated so far, and are used to test conditionals
+
 	local localValues = table.mergeKeys(self._env)
+	local globalValues = table.mergeKeys(self._env)
 
-	local inheritedBlocks = {}
-	local inheritedValues = table.mergeKeys(self._env)
+	-- Keep iterating over the list of blocks until all have been processed. Each time new values
+	-- are added and removed, any blocks that had been previously skipped over need to be rechecked
+	-- to see if they have come into scope as a result of the new state.
 
-	self._enabledBlocks = localBlocks
-	self._values = localValues
+	local function _DEBUG(...)
+		-- test.print(...)
+	end
 
-	local blocks = self._sourceBlocks
-	for i = 1, #blocks do
+	local i = 1
+	while i <= #blocks do
 		local block = blocks[i]
+		local sourceBlock = block.source
+		local globalOp = block.globalOp
 
-		_DEBUG('------------------------------------------------')
-		_DEBUG('BLOCK:', table.toString(block))
-		_DEBUG('LOCAL VALUES:', table.toString(localValues))
-		_DEBUG('ALL VALUES:', table.toString(inheritedValues))
+		if globalOp ~= UNKNOWN and globalOp ~= IGNORE then
+			i = i + 1
+		else
 
+			_DEBUG('------------------------------------------------')
+			_DEBUG('INDEX:', i)
+			_DEBUG('BLOCK:', table.toString(block))
+			_DEBUG('LOCAL VALUES:', table.toString(localValues))
+			_DEBUG('GLOBAL VALUES:', table.toString(globalValues))
+			_DEBUG('LOCAL SCOPE:', table.toString(self._localScope))
+			_DEBUG('REQ SCOPE:', table.toString(self._requiredScope))
+			_DEBUG('FULL SCOPE:', table.toString(self._fullScope))
 
-		_DEBUG('REQ SCOPE:', table.toString(self._requiredScope))
-		_DEBUG('FULL SCOPE:', table.toString(self._fullScope))
-		_DEBUG('LOCAL SCOPE:', table.toString(self._localScope))
+			local localOp, globalOp = Query._testBlock(self, sourceBlock, localValues, globalValues)
 
-		local localOperation, inheritedOperation = Query._testBlock(self, block, localValues, inheritedValues)
+			_DEBUG('localOp:', localOp)
+			_DEBUG('globalOp:', globalOp)
 
-		_DEBUG('local op:', localOperation)
-		_DEBUG('inherit op:', inheritedOperation)
+			block.localOp = localOp
+			block.globalOp = globalOp
 
-		if localOperation == ADD and block._operation == REMOVE then
-			-- Encountered a remove block which would have already removed the values higher up in the
-			-- configuration tree (ex. the workspace). But the conditions surrounding the remove don't
-			-- apply to this specific query, so we now need to add those values back in. This happens
-			-- when a value is removed from one of several siblings; if a symbol is removed from 'Project1',
-			-- 'Project2' and 'Project3' should still have that symbol set.
+			if localOp == ADD and sourceBlock._operation == REMOVE then
+				-- This is a remove block which would have already removed the values higher up in the
+				-- configuration tree (ex. the workspace). But the conditions surrounding the remove don't
+				-- apply to this specific query, so we now need to add those values back in. This happens
+				-- when a value is removed from one of several siblings; ex. if a symbol is removed from
+				-- 'Project1', 'Project2' and 'Project3' should still have that symbol set. Can't just
+				-- blindly assume all of the removed values were actually present at the parent though;
+				-- check the global state and only add back values which are really there.
 
-			-- Can't just blindly assume all of the removed values were actually present at the parent
-			-- though; check the inherited state and only add back values which are really there.
+				block.localOp = OUT_OF_SCOPE  -- don't want to remove, will insert additions instead
+				_DEBUG('replacing remove with add')
 
-			local additionsBlock = {}
+				local newSourceBlockWithAdditions = {}
 
-			for fieldName, removePatterns in pairs(block) do
-				if Field.exists(fieldName) then
-					local field = Field.get(fieldName)
+				for fieldName, removePatterns in pairs(sourceBlock) do
+					if Field.exists(fieldName) then
+						local field = Field.get(fieldName)
 
-					-- TODO: Need a `_fetch(fieldName, blockList)` here once `evaluate()` is reworked to only pull
-					-- the values which are required by the conditionals. For now, it's always fetching every field
-					-- so I can assume the values are all there.
-					local currentInheritedValues = inheritedValues[fieldName]
+						-- TODO: Need a `_fetch(fieldName, blockList)` here once `evaluate()` is reworked to only pull
+						-- the values required by the conditionals. For now, it's always fetching every field so I can
+						-- assume the values are all there.
+						local currentGlobalValues = globalValues[fieldName]
 
-					local _, removedValues = Field.removeValues(field, currentInheritedValues, removePatterns)
+						local _, removedValues = Field.removeValues(field, currentGlobalValues, removePatterns)
 
-					local currentLocalValues = localValues[fieldName] or {} -- use `_fetch()` here too
+						local currentLocalValues = localValues[fieldName] or {} -- use `_fetch()` here too
 
-					local addedValues = {}
+						local addedValues = {}
 
-					for i = 1, #removedValues do
-						local value = removedValues[i]
-						-- in this case, don't want to add duplicates even if the field would otherwise allow it
-						if not Field.contains(field, currentLocalValues, value) then
-							table.insert(addedValues, value)
+						for i = 1, #removedValues do
+							local value = removedValues[i]
+							-- in this case, don't want to add duplicates even if the field would otherwise allow it
+							if not Field.contains(field, currentLocalValues, value) then
+								table.insert(addedValues, value)
+							end
+						end
+
+						if #addedValues > 0 then
+							newSourceBlockWithAdditions[fieldName] = addedValues
 						end
 					end
-
-					if #addedValues > 0 then
-						additionsBlock[fieldName] = addedValues
-					end
 				end
+
+				table.insert(blocks, i, {
+					source = newSourceBlockWithAdditions,
+					localOp = ADD,
+					globalOp = OUT_OF_SCOPE -- don't want these additions included in global results
+				})
+
+				Query._mergeBlockWithValues(self, newSourceBlockWithAdditions, localValues, self._fullScope, ADD)
 			end
 
-			table.insert(localBlocks, {
-				_operation = ADD,
-				_values = additionsBlock
-			})
+			-- Apply a "normal" add or remove block to the accumlated values
 
-			Query._mergeBlockWithValues(self, additionsBlock, localValues, self._fullScope, ADD)
+			if localOp == sourceBlock._operation then
+				Query._mergeBlockWithValues(self, sourceBlock, localValues, self._fullScope, localOp)
+			end
+
+			-- Apply an add/remove block to the inherited results
+			if globalOp == sourceBlock._operation then
+				Query._mergeBlockWithValues(self, sourceBlock, globalValues, EMPTY, globalOp)
+			end
+
+			_DEBUG('local after:', table.toString(localValues))
+			_DEBUG('global after:', table.toString(globalValues))
+
+			if globalOp ~= IGNORE then
+				i = 1  -- something was changed, retest previously ignored blocks
+			else
+				i = i + 1
+			end
 		end
-
-		-- Apply an add/remove block to the query results
-		if localOperation == block._operation then
-			Query._mergeBlockWithValues(self, block, localValues, self._fullScope, localOperation)
-			table.insert(localBlocks, {
-				_operation = localOperation,
-				_values = block
-			})
-		end
-
-		-- Apply an add/remove block to the inherited results
-		if inheritedOperation ~= nil then
-			Query._mergeBlockWithValues(self, block, inheritedValues, EMPTY, inheritedOperation)
-			table.insert(inheritedBlocks, {
-				_operation = localOperation,
-				_values = block
-			})
-		end
-
-		_DEBUG('local after:', table.toString(localValues))
-		_DEBUG('all after:', table.toString(inheritedValues))
 	end
+
+	-- Weed out all of the blocks that don't apply to this query for faster fetches later
+
+	local enabledBlocks = {}
+
+	for i = 1, #blocks do
+		local block = blocks[i]
+		local localOp = block.localOp
+
+		if localOp == ADD or localOp == REMOVE then
+			table.insert(enabledBlocks, block)
+		end
+	end
+
+	self._enabledBlocks = enabledBlocks
 end
 
 
-function Query._testBlock(self, block, localValues, inheritedValues)
-
-
+function Query._testBlock(self, block, localValues, globalValues)
 	local condition = block._condition
 	local operation = block._operation
 
 	-- If the condition fails against the inherited state then this block isn't intended for us
-	if not Condition.isSatisfiedBy(condition, inheritedValues) then
-		return Query.IGNORE, Query.IGNORE
+	if not Condition.isSatisfiedBy(condition, globalValues) then
+		return IGNORE, IGNORE
 	end
 
 	if operation == ADD then
@@ -325,7 +364,7 @@ function Query._testBlock(self, block, localValues, inheritedValues)
 
 	end
 
-	return Query.IGNORE, operation
+	return IGNORE, operation
 end
 
 
