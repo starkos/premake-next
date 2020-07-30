@@ -17,9 +17,7 @@ local OP_AND = 2
 local OP_OR = 3
 local OP_NOT = 4
 
-local TEST_SCOPE = 1
-local TEST_STRICT = 2
-local TEST_LOOSE = 3
+local ALLOW_NIL = true
 
 
 local _metatable = { -- set up ':' style calling
@@ -30,15 +28,15 @@ local _metatable = { -- set up ':' style calling
 
 
 ---
--- Register and possible create a condition.
+-- Create a new Condition instance.
 --
 -- @param clauses
 --    A table of field-pattern pairs representing the clauses of the condition.
 -- @return
---    A Condition representing the provided clauses.
+--    A new Condition instance representing the specified clauses.
 ---
 
-function Condition.register(clauses)
+function Condition.new(clauses)
 	local fieldsTested = {}
 
 	local ok, result = pcall(function()
@@ -57,14 +55,14 @@ end
 
 
 ---
--- Returns true if each clause is satisfied by the filtering values, or if
--- no filtering value is provided (`nil`) for that clause. It should return
--- false if the filtering values contain a conflicting value for the clause.
+-- Returns `true` if every clause in the condition has a passing value in `values`,
+-- or no value (`nil`). Returns `false` if `values` contains an non-nil value which
+-- fails one of the clauses.
 ---
 
-function Condition.isLooseMatch(self, values)
+function Condition.isNotFailedBy(self, values)
 	local ok, result = pcall(function()
-		return Condition._test(self._test, values, TEST_LOOSE)
+		return Condition._test(self._test, values, ALLOW_NIL)
 	end)
 
 	if not ok then
@@ -76,39 +74,12 @@ end
 
 
 ---
--- Returns true is all values in the provided scope have a corresponding
--- clause in the condition which is satisfied by the scope value.
+-- Returns `true` if every clause in the condition has a passing non-nil value in `values`.
 ---
 
-function Condition.isScopeMatch(self, scope)
-	local fieldsTested = self._fieldsTested
-	local test = self._test
-
-	for scopeKey, scopeValue in pairs(scope) do
-		if not fieldsTested[scopeKey] then
-			return false
-		end
-	end
-
+function Condition.isSatisfiedBy(self, values)
 	local ok, result = pcall(function()
-		return Condition._test(test, scope, TEST_SCOPE)
-	end)
-
-	if not ok then
-		error(result, 2)
-	end
-
-	return result
-end
-
-
----
--- Returns true if all clauses are satisfied by provided filtering values.
----
-
-function Condition.isStrictMatch(self, values)
-	local ok, result = pcall(function()
-		return Condition._test(self._test, values, TEST_STRICT)
+		return Condition._test(self._test, values)
 	end)
 
 	if not ok then
@@ -132,6 +103,22 @@ function Condition.merge(outer, inner)
 		_fieldsTested = fieldsTested,
 		_test = test
 	}, _metatable)
+end
+
+
+---
+-- Checks to see if a condition contains clauses to test all of the keys in the
+-- provided list of fields. If any key is present in `fields` which can't be matched
+-- to a corresponding clause in the condition, the test fails and returns `false`.
+---
+
+function Condition.testsAllKeys(self, fields)
+	for fieldName in pairs(fields) do
+		if not self._fieldsTested[fieldName] then
+			return false
+		end
+	end
+	return true
 end
 
 
@@ -164,7 +151,9 @@ end
 -- Evaluate a test tree.
 ---
 
-function Condition._test(operation, values, kind)
+function Condition._test(operation, values, allowNil)
+	local result
+
 	if operation._op == OP_TEST then
 
 		local fieldName = operation[1]
@@ -172,22 +161,24 @@ function Condition._test(operation, values, kind)
 		local testValue = values[fieldName]
 
 		if not testValue then
-			return (kind ~= TEST_STRICT)
+			result = allowNil
 		else
 			local field = Field.get(fieldName)
-			return Field.matchesPattern(field, testValue, pattern)
+			result = Field.contains(field, testValue, pattern)
 		end
 
 	elseif operation._op == OP_AND then
 
 		for i = 1, #operation do
-			if not Condition._test(operation[i], values, kind) then
+			if not Condition._test(operation[i], values, allowNil) then
 				return false
 			end
 		end
 		return true
 
 	end
+
+	return result
 end
 
 

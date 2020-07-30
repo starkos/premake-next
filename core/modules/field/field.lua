@@ -97,9 +97,9 @@ end
 -- Tests a pattern against field value(s); returns true if the pattern can be matched.
 ---
 
-function Field.matchesPattern(self, value, pattern)
+function Field.contains(self, value, pattern)
 	-- just to get things going
-	if self.kind == 'list:string' then
+	if type(value) == 'table' then
 		for i = 1, #value do
 			if string.match(value[i], pattern) then
 				return true
@@ -137,21 +137,25 @@ function Field.removeValues(self, currentValue, patternsToRemove)
 	-- just to get things going
 	if self.kind == 'list:string' then
 		local result = {}
+		local removed = {}
 
-		table.forEach(currentValue, function(value)
+		table.forEach(currentValue or Field.defaultValue(self), function(value)
 			for i = 1, #patternsToRemove do
 				if string.match(value, patternsToRemove[i]) then
-					return -- removed
+					table.insert(removed, value)
+					return -- value is removed; skip to next value
 				end
 			end
 
+			-- was not removed; add to new results
 			table.insert(result, value)
 		end)
 
-		return result
+		return result, removed
+	else
+		-- not a collection type
+		return currentValue
 	end
-
-	return currentValue
 end
 
 

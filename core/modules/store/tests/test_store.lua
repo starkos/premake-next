@@ -1,6 +1,6 @@
 local Store = require('store')
 
-local StoreTests = test.declare('store')
+local StoreTests = test.declare('StoreTests')
 
 local store
 
@@ -24,5 +24,5 @@ end
 ---
 
 function StoreTests.query_returnsObject()
-	test.isNotNil(store:query({}))
+	test.isNotNil(store:query())
 end

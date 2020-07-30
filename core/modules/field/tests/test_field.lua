@@ -119,18 +119,18 @@ end
 -- matched against the field's value.
 ---
 
-function FieldTests.matchesPattern_isTrue_onSimpleValueMatch()
-	test.isTrue(stringField:matchesPattern('x', 'x'))
+function FieldTests.contains_isTrue_onSimpleValueMatch()
+	test.isTrue(stringField:contains('x', 'x'))
 end
 
-function FieldTests.matchesPattern_isFalse_onSimpleValueMismatch()
-	test.isFalse(stringField:matchesPattern('x', 'y'))
+function FieldTests.contains_isFalse_onSimpleValueMismatch()
+	test.isFalse(stringField:contains('x', 'y'))
 end
 
-function FieldTests.matchesPattern_isTrue_onListValueMatch()
-	test.isTrue(listField:matchesPattern({ 'x', 'y' }, 'x'))
+function FieldTests.contains_isTrue_onListValueMatch()
+	test.isTrue(listField:contains({ 'x', 'y' }, 'x'))
 end
 
-function FieldTests.matchesPattern_isFalse_onListValueMisatch()
-	test.isFalse(listField:matchesPattern({ 'x', 'y' }, 'z'))
+function FieldTests.contains_isFalse_onListValueMisatch()
+	test.isFalse(listField:contains({ 'x', 'y' }, 'z'))
 end
