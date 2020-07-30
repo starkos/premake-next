@@ -16,18 +16,14 @@ end
 ---
 
 function QueryTests.fetch_returnsSimpleValue_onNoConditions()
-	local query = store
-		:addValue('kind', 'StaticLibrary')
-		:query()
-	test.isEqual('StaticLibrary', query:fetch('kind'))
+	store:addValue('kind', 'StaticLibrary')
+	test.isEqual('StaticLibrary', store:query():fetch('kind'))
 end
 
 
 function QueryTests.fetch_returnsCollectionValue_onGlobalScope()
-	local query = store
-		:addValue('defines', { 'A', 'B' })
-		:query()
-	test.isEqual({ 'A', 'B' }, query:fetch('defines'))
+	store:addValue('defines', { 'A', 'B' })
+	test.isEqual({ 'A', 'B' }, store:query():fetch('defines'))
 end
 
 
@@ -37,14 +33,12 @@ end
 ---
 
 function QueryTests.fetch_returnsNil_onUnsetString()
-	local query = store:query()
-	test.isNil(query:fetch('kind'))
+	test.isNil(store:query():fetch('kind'))
 end
 
 
 function QueryTests.fetch_returnsEmptyList_onUnsetList()
-	local query = store:query()
-	test.isEqual({}, query:fetch('defines'))
+	test.isEqual({}, store:query():fetch('defines'))
 end
 
 
@@ -53,22 +47,22 @@ end
 ---
 
 function QueryTests.fetch_returnsNil_onUnmetStringCondition()
-	local query = store
+	store
 		:pushCondition({ system = 'Windows' })
 		:addValue('kind', 'SharedLibrary')
 		:popCondition()
-		:query()
-	test.isNil(query:fetch('kind'))
+
+	test.isNil(store:query():fetch('kind'))
 end
 
 
 function QueryTests.fetch_returnsNil_onUnmetListCondition()
-	local query = store
+	store
 		:pushCondition({ defines = 'X' })
 		:addValue('kind', 'SharedLibrary')
 		:popCondition()
-		:query()
-	test.isNil(query:fetch('kind'))
+
+	test.isNil(store:query():fetch('kind'))
 end
 
 
@@ -77,21 +71,23 @@ end
 ---
 
 function QueryTests.fetch_returnsValue_onStringConditionMet()
-	local query = store
+	store
 		:pushCondition({ system = 'Windows' })
 		:addValue('kind', 'StaticLibrary')
 		:popCondition()
-		:query({ system = 'Windows' })
+
+	local query = store:query({ system = 'Windows' })
 	test.isEqual('StaticLibrary', query:fetch('kind'))
 end
 
 
 function QueryTests.fetch_returnsValue_onListConditionMet()
-	local query = store
+	store
 		:pushCondition{ defines = 'X' }
 		:addValue('kind', 'SharedLibrary')
 		:popCondition()
-		:query({ defines = 'X' })
+
+	local query = store:query({ defines = 'X' })
 	test.isEqual('SharedLibrary', query:fetch('kind'))
 end
 
@@ -102,29 +98,27 @@ end
 ---
 
 function QueryTests.fetch_includesNestedBlock_whenCombinedConditionsMet()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', 'WORKSPACE')
 
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-		:query({ workspaces = 'Workspace1', projects = 'Project1' })
-
+	local query = store:query({ workspaces = 'Workspace1', projects = 'Project1' })
 	test.isEqual({ 'WORKSPACE', 'PROJECT' }, query:fetch('defines'))
 end
 
 
 function QueryTests.fetch_excludesNestedBlock_whenCombinedConditionsNotMet()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', 'WORKSPACE')
 
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-		:query({ projects = 'Project1' })
-
+	local query = store:query({ projects = 'Project1' })
 	test.isEqual({}, query:fetch('defines'))
 end
 
@@ -135,7 +129,7 @@ end
 ---
 
 function QueryTests.select_limitsToSelectedScope_onTopLevelScopes()
-	local query = store
+	store
 		:addValue('defines', 'GLOBAL')
 
 		:pushCondition({ workspaces = 'Workspace1' })
@@ -148,15 +142,16 @@ function QueryTests.select_limitsToSelectedScope_onTopLevelScopes()
 
 		:pushCondition({ configurations = 'Debug' })
 		:addValue('defines', 'DEBUG"')
-		:query()
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
+
 	test.isEqual({ 'WORKSPACE' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.select_limitsToSelectedScope_onNestedScopes()
-	local query = store
+	store
 		:addValue('defines', 'GLOBAL')
 
 		:pushCondition({ workspaces = 'Workspace1' })
@@ -167,22 +162,21 @@ function QueryTests.select_limitsToSelectedScope_onNestedScopes()
 
 		:pushCondition({ configurations = 'Debug' })
 		:addValue('defines', 'DEBUG"')
-		:query()
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
+
 	test.isEqual({ 'WORKSPACE' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.select_excludesValuesFromOuter_onNoInherit()
-	local query = store
+	store
 		:pushCondition({ configuration = 'Debug' })
 		:addValue('defines', 'DEBUG')
 		:popCondition()
 
-		:query()
-
-	local debugCfg = query
+	local debugCfg = store:query()
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
 		:select({ configurations = 'Debug' })
@@ -197,7 +191,7 @@ end
 ---
 
 function QueryTests.inheritValues_includesImmediateBroaderScope_onTopLevelScopes()
-	local query = store
+	store
 		:addValue('defines', 'GLOBAL')
 
 		:pushCondition({ workspaces = 'Workspace1' })
@@ -209,9 +203,7 @@ function QueryTests.inheritValues_includesImmediateBroaderScope_onTopLevelScopes
 		:addValue('defines', 'PROJECT')
 		:popCondition()
 
-		:query()
-
-	local project = query
+	local project = store:query()
 		:select({ workspaces = 'Workspace1' }) -- does not inherit
 		:select({ projects = 'Project1' }):inheritValues()
 
@@ -220,7 +212,7 @@ end
 
 
 function QueryTests.inheritValues_includesImmediateBroaderScope_onNestedScopes()
-	local query = store
+	store
 		:addValue('defines', 'GLOBAL')
 
 		:pushCondition({ workspaces = 'Workspace1' })
@@ -229,9 +221,7 @@ function QueryTests.inheritValues_includesImmediateBroaderScope_onNestedScopes()
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-		:query()
-
-	local project = query
+	local project = store:query()
 		:select({ workspaces = 'Workspace1' }) -- does not inherit
 		:select({ projects = 'Project1' }):inheritValues()
 
@@ -245,7 +235,7 @@ end
 ---
 
 function QueryTests.inheritValues_includesValuesInheritedByBroaderScope()
-	local query = store
+	store
 		:addValue('defines', 'GLOBAL')
 
 		:pushCondition({ workspaces = 'Workspace1' })
@@ -254,9 +244,8 @@ function QueryTests.inheritValues_includesValuesInheritedByBroaderScope()
 
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
-		:query()
 
-	local project = query
+	local project = store:query()
 		:select({ workspaces = 'Workspace1' }):inheritValues()
 		:select({ projects = 'Project1' }):inheritValues()
 
@@ -275,7 +264,7 @@ end
 ---
 
 function QueryTests.remove_byWorkspace()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
 		:popCondition()
@@ -284,15 +273,15 @@ function QueryTests.remove_byWorkspace()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-		:query()
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
 	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.remove_byProject()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
@@ -300,15 +289,16 @@ function QueryTests.remove_byProject()
 
 		:pushCondition({ projects = 'Project1' })
 		:removeValue('defines', 'VALUE2')
-		:query()
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
+
 	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.remove_byNestedProject()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
@@ -316,15 +306,15 @@ function QueryTests.remove_byNestedProject()
 		:pushCondition({ projects = 'Project1' })
 		:removeValue('defines', 'VALUE2')
 
-		:query()
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
 	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.remove_byUnrelatedProject_isIgnored()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
@@ -334,15 +324,15 @@ function QueryTests.remove_byUnrelatedProject_isIgnored()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-		:query()
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
 	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.remove_byProject_appearsInOtherProjects()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1', 'Project2' })
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
@@ -355,9 +345,7 @@ function QueryTests.remove_byProject_appearsInOtherProjects()
 		:pushCondition({ projects = 'Project2' })
 		:popCondition()
 
-		:query()
-
-	local project2 = query
+	local project2 = store:query()
 		:select({ workspaces = 'Workspace1'})
 		:select({ projects = 'Project2 '}):inheritValues()
 
@@ -374,7 +362,7 @@ end
 ---
 
 function QueryTests.remove_byProject_appearsInOtherProjects_noInheritance()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1', 'Project2' })
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
@@ -387,9 +375,7 @@ function QueryTests.remove_byProject_appearsInOtherProjects_noInheritance()
 		:pushCondition({ projects = 'Project2' })
 		:popCondition()
 
-		:query()
-
-	local project2 = query
+	local project2 = store:query()
 		:select({ workspaces = 'Workspace1'})
 		:select({ projects = 'Project2 '})
 
@@ -398,7 +384,7 @@ end
 
 
 function QueryTests.remove_fromConfig_byProject()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1' })
 		:addValue('configurations', { 'Debug', 'Release '})
@@ -412,9 +398,7 @@ function QueryTests.remove_fromConfig_byProject()
 		:removeValue('defines', 'DEBUG2')
 		:popCondition()
 
-		:query()
-
-	local debugCfg = query
+	local debugCfg = store:query()
 		:select({ workspaces = 'Workspace1'})
 		:select({ configurations = 'Debug'}):inheritValues()
 
@@ -423,7 +407,7 @@ end
 
 
 function QueryTests.remove_fromConfig_byProject_noInheritance()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1' })
 		:addValue('configurations', { 'Debug', 'Release '})
@@ -437,9 +421,7 @@ function QueryTests.remove_fromConfig_byProject_noInheritance()
 		:removeValue('defines', 'DEBUG2')
 		:popCondition()
 
-		:query()
-
-	local debugCfg = query
+	local debugCfg = store:query()
 		:select({ workspaces = 'Workspace1'})
 		:select({ configurations = 'Debug'})
 
@@ -453,7 +435,7 @@ end
 ---
 
 function QueryTests.remove_byProjectConfig()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('configurations', { 'Debug', 'Release' })
@@ -464,15 +446,15 @@ function QueryTests.remove_byProjectConfig()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-		:query()
+	local workspace = store:query()
+		:select({ workspaces = 'Workspace1' })
 
-	local workspace = query:select({ workspaces = 'Workspace1' })
 	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
 end
 
 
 function QueryTests.remove_byProjectConfig_appearsInOtherConfigs()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('configurations', { 'Debug', 'Release' })
@@ -483,9 +465,7 @@ function QueryTests.remove_byProjectConfig_appearsInOtherConfigs()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-		:query()
-
-	local releaseCfg = query
+	local releaseCfg = store:query()
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' }):inheritValues()
 		:select({ configurations = 'Release' }):inheritValues()
@@ -495,7 +475,7 @@ end
 
 
 function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_noInheritance()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('configurations', { 'Debug', 'Release' })
@@ -506,9 +486,7 @@ function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_noInheritance()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-		:query()
-
-	local releaseCfg = query
+	local releaseCfg = store:query()
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
 		:select({ configurations = 'Release' })
@@ -518,7 +496,7 @@ end
 
 
 function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_mixedInheritance()
-	local query = store
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
 		:addValue('configurations', { 'Debug', 'Release' })
@@ -529,12 +507,34 @@ function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_mixedInheritanc
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-		:query()
-
-	local releaseCfg = query
+	local releaseCfg = store:query()
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
 		:select({ configurations = 'Release' }):inheritValues()
 
 	test.isEqual({ 'VALUE2' }, releaseCfg:fetch('defines'))
+end
+
+
+---
+-- It should be possible to test for values that haven't been set yet (i.e. setting up
+-- target type specific settings at the global or workspace level, when `kind` isn't set
+-- until projects are configured later).
+---
+
+function QueryTests.canEvaluateBlocksOutOfOrder()
+	store
+		:pushCondition({ kind = 'StaticLibrary' })
+		:addValue('defines', 'STATIC')
+		:popCondition()
+
+		:pushCondition({ projects = 'Project1' })
+		:addValue('kind', 'StaticLibrary')
+		:addValue('defines', 'PROJECT')
+		:popCondition()
+
+	local project = store:query()
+		:select({ projects = 'Project1' }):inheritValues()
+
+	test.isEqual({ 'STATIC', 'PROJECT' }, project:fetch('defines'))
 end
