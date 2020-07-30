@@ -48,7 +48,7 @@ end
 ---
 
 function Store.pushCondition(self, clauses)
-	local condition = Condition.register(clauses)
+	local condition = Condition.new(clauses)
 
 	local conditions = self._conditions
 	if #conditions > 0 then
@@ -59,6 +59,7 @@ function Store.pushCondition(self, clauses)
 	table.insert(conditions, condition)
 	self._currentCondition = condition
 	self._currentBlock = nil
+
 	return self
 end
 
@@ -70,8 +71,10 @@ end
 function Store.popCondition(self)
 	local conditions = self._conditions
 	table.remove(conditions)
+
 	self._currentCondition = conditions[#conditions]
 	self._currentBlock = nil
+
 	return self
 end
 
@@ -90,9 +93,7 @@ end
 ---
 
 function Store.query(self, env)
-	local query = Query.newFromStore(self._blocks, env)
-	-- Query.evaluate(query)
-	return query
+	return Query.new(self._blocks, env)
 end
 
 
@@ -101,7 +102,7 @@ end
 ---
 
 function Store.addValue(self, fieldName, value)
-	Store._applyValueOperation(self, Query.ADDING, fieldName, value)
+	Store._applyValueOperation(self, Query.ADD, fieldName, value)
 	return self
 end
 
@@ -112,7 +113,7 @@ end
 ---
 
 function Store.removeValue(self, fieldName, value)
-	Store._applyValueOperation(self, Query.REMOVING, fieldName, value)
+	Store._applyValueOperation(self, Query.REMOVE, fieldName, value)
 	return self
 end
 
@@ -121,18 +122,13 @@ function Store._applyValueOperation(self, operation, fieldName, value)
 	local block = self._currentBlock
 
 	if block == nil or block._operation ~= operation then
-		block = {
-			_condition = self._currentCondition,
-			_operation = operation
-		}
+		block = Query.newStorageBlock(operation, self._currentCondition)
 		table.insert(self._blocks, block)
 		self._currentBlock = block
 	end
 
-	local currentValue = block[fieldName]
-
 	local field = Field.get(fieldName)
-	block[fieldName] = Field.mergeValues(field, currentValue, value)
+	block[fieldName] = Field.mergeValues(field, block[fieldName], value)
 end
 
 

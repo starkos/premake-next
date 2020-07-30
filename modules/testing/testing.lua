@@ -21,14 +21,20 @@ local INFO = terminal.systemColor
 local GREEN = terminal.lightGreen
 local RED = terminal.red
 
+
+local function _log(color, label, format, ...)
+	if color then
+		terminal.printColor(color, label)
+		printf(format, ...)
+	else
+		print()
+	end
+end
+
+
 local function _logVerbose(color, label, format, ...)
 	if _isVerbose then
-		if color then
-			terminal.printColor(color, label)
-			printf(format, ...)
-		else
-			print()
-		end
+		_log(color, label, format, ...)
 	end
 end
 
@@ -185,10 +191,17 @@ function m.runIndividualTest(suiteName, testName)
 
 	local elapsedTime = (os.clock() - startTime) * 1000
 
-	if ok then
-		_logVerbose(GREEN, '[       OK ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
-	else
-		_logVerbose(RED, '[  FAILED  ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
+	if _isVerbose then
+		if ok then
+			_logVerbose(GREEN, '[       OK ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
+		else
+			_logVerbose(RED, '[  FAILED  ]', ' %s.%s (%.0f ms)', suiteName, testName, elapsedTime)
+		end
+	elseif not ok then
+		_log(RED, '[FAILED]', ' %s.%s', suiteName, testName)
+	end
+
+	if not ok then
 		print(err)
 	end
 
@@ -274,7 +287,7 @@ function m.isAllowedTest(suiteName, testName)
 
 	local patterns = m._allowedTestPatterns
 	for i = 1, #patterns do
-		if string.match(fullTestName, patterns[i]) then
+		if string.match(fullTestName, patterns[i]) == fullTestName then
 			return true
 		end
 	end
