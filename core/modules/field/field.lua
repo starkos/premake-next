@@ -101,13 +101,14 @@ function Field.contains(self, value, pattern)
 	-- just to get things going
 	if type(value) == 'table' then
 		for i = 1, #value do
-			if string.match(value[i], pattern) then
+			local value = value[i]
+			if string.match(value, pattern) == value then
 				return true
 			end
 		end
 		return false
 	else
-		return string.match(value, pattern)
+		return (string.match(value, pattern) == value)
 	end
 end
 
