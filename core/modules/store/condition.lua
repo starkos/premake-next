@@ -12,10 +12,10 @@ local Field = require('field')
 
 local Condition = {}
 
-local OP_TEST = 1
-local OP_AND = 2
-local OP_OR = 3
-local OP_NOT = 4
+local OP_TEST = 'TEST'
+local OP_AND = 'AND'
+local OP_OR = 'OR'
+local OP_NOT = 'NOT'
 
 local ALLOW_NIL = true
 
@@ -37,20 +37,21 @@ local _metatable = { -- set up ':' style calling
 ---
 
 function Condition.new(clauses)
-	local fieldsTested = {}
+	local self = setmetatable({
+		_fieldsTested = {},
+		_rootTest = nil
+	}, _metatable)
 
 	local ok, result = pcall(function()
-		return Condition._parseUserClauses(clauses, fieldsTested)
+		return Condition._parseCondition(self, clauses)
 	end)
 
 	if not ok then
 		error(result, 2)
 	end
 
-	return setmetatable({
-		_fieldsTested = fieldsTested,
-		_test = result
-	}, _metatable)
+	self._rootTest = result
+	return self
 end
 
 
@@ -62,7 +63,7 @@ end
 
 function Condition.isNotFailedBy(self, values)
 	local ok, result = pcall(function()
-		return Condition._test(self._test, values, ALLOW_NIL)
+		return Condition._test(self._rootTest, values, ALLOW_NIL)
 	end)
 
 	if not ok then
@@ -79,7 +80,7 @@ end
 
 function Condition.isSatisfiedBy(self, values)
 	local ok, result = pcall(function()
-		return Condition._test(self._test, values)
+		return Condition._test(self._rootTest, values)
 	end)
 
 	if not ok then
@@ -96,12 +97,12 @@ end
 
 function Condition.merge(outer, inner)
 	local fieldsTested = table.mergeKeys(outer._fieldsTested, inner._fieldsTested)
-	local test = table.joinArrays(outer._test, inner._test)
-	test._op = OP_AND
+	local rootTest = table.joinArrays(outer._rootTest, inner._rootTest)
+	rootTest._op = OP_AND
 
 	return setmetatable({
 		_fieldsTested = fieldsTested,
-		_test = test
+		_rootTest = rootTest
 	}, _metatable)
 end
 
@@ -127,23 +128,84 @@ end
 -- of logical operations.
 ---
 
-function Condition._parseUserClauses(clauses, fieldsTested)
-	local clause
+function Condition._parseCondition(self, clauses)
+	local tests = { _op = OP_AND }
 
-	local result = { _op = OP_AND }
-
-	for field, pattern in pairs(clauses) do
-		field, clause = Condition._parseUserClause(field, pattern, fieldsTested)
-		table.insert(result, clause)
+	for key, pattern in pairs(clauses) do
+		clause = Condition._parseClause(self, nil, key, pattern)
+		table.insert(tests, clause)
 	end
 
-	return result
+	return tests
 end
 
 
-function Condition._parseUserClause(fieldName, pattern, fieldsTested)
-	fieldsTested[fieldName] = true
-	return field, { _op = OP_TEST, fieldName, pattern }
+function Condition._parseClause(self, defaultFieldName, fieldName, pattern)
+	-- if clause was specified as an array value rather than a key-value pair, parse out the target field name
+	if type(fieldName) ~= 'string' then
+		-- canonically "not" should be specified after the field name but not everyone thinks that way; move it for them
+		local shouldNegate = false
+		if string.startsWith(pattern, 'not ') then
+			pattern = string.sub(pattern, 5)
+			shouldNegate = true
+		end
+		return Condition._parseFieldName(self, defaultFieldName, pattern, shouldNegate)
+	end
+
+	local parts = string.split(pattern, ' or ', true)
+	if #parts > 1 then
+		return Condition._parseOrOperators(self, fieldName or defaultFieldName, parts)
+	end
+
+	if string.startsWith(pattern, 'not ') then
+		return Condition._parseNotOperator(self, defaultFieldName, fieldName, pattern)
+	end
+
+	-- we've reduced it to a simple 'key=value' test
+	self._fieldsTested[fieldName] = true
+	return { _op = OP_TEST, fieldName, pattern }
+end
+
+
+function Condition._parseFieldName(self, defaultFieldName, pattern, shouldNegate)
+	local parts = string.split(pattern, ':', true, 1)
+	if #parts > 1 then
+		fieldName = parts[1]
+		pattern = parts[2]
+	else
+		fieldName = defaultFieldName
+	end
+
+	if fieldName == nil then
+		error('No field name specified for condition "' .. pattern .. "'", 0)
+	end
+
+	if shouldNegate then
+		pattern = 'not ' .. pattern
+	end
+
+	return Condition._parseClause(self, nil, fieldName, pattern)
+end
+
+
+function Condition._parseNotOperator(self, defaultFieldName, fieldName, pattern)
+	pattern = string.sub(pattern, 5)
+	return {
+		_op = OP_NOT,
+		Condition._parseClause(self, defaultFieldName, fieldName, pattern)
+	}
+end
+
+
+function Condition._parseOrOperators(self, defaultFieldName, patterns)
+	local tests = { _op = OP_OR }
+
+	for i = 1, #patterns do
+		local test = Condition._parseClause(self, defaultFieldName, nil, patterns[i])
+		table.insert(tests, test)
+	end
+
+	return tests
 end
 
 
@@ -154,7 +216,9 @@ end
 function Condition._test(operation, values, allowNil)
 	local result
 
-	if operation._op == OP_TEST then
+	local op = operation._op
+
+	if op == OP_TEST then
 
 		local fieldName = operation[1]
 		local pattern = operation[2]
@@ -167,7 +231,7 @@ function Condition._test(operation, values, allowNil)
 			result = Field.contains(field, testValue, pattern)
 		end
 
-	elseif operation._op == OP_AND then
+	elseif op == OP_AND then
 
 		for i = 1, #operation do
 			if not Condition._test(operation[i], values, allowNil) then
@@ -175,6 +239,19 @@ function Condition._test(operation, values, allowNil)
 			end
 		end
 		return true
+
+	elseif op == OP_NOT then
+
+		return not Condition._test(operation[1], values, allowNil)
+
+	elseif op == OP_OR then
+
+		for i = 1, #operation do
+			if Condition._test(operation[i], values, allowNil) then
+				return true
+			end
+		end
+		return false
 
 	end
 

@@ -75,11 +75,85 @@ end
 
 
 ---
--- Test parsing of user specified conditions
+-- Parsing tests
 ---
 
-function ConditionTests.singleClause_asKeyValue_withStringField()
+function ConditionTests.singleClause_asKeyValue()
 	local c = Condition.new({ system = 'Windows' })
 	test.isTrue(c:isSatisfiedBy({ system = 'Windows' }))
 	test.isFalse(c:isSatisfiedBy({ system = 'MacOS' }))
+end
+
+
+function ConditionTests.singleClause_asStringValue()
+	local c = Condition.new({ 'system:Windows' })
+	test.isTrue(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isFalse(c:isSatisfiedBy({ system = 'MacOS' }))
+end
+
+
+function ConditionTests.not_asKeyValue()
+	local c = Condition.new({ system = 'not Windows' })
+	test.isFalse(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS' }))
+end
+
+
+function ConditionTests.not_asStringInline()
+	local c = Condition.new({ 'system:not Windows' })
+	test.isFalse(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS' }))
+end
+
+
+function ConditionTests.not_asStringPrefix()
+	local c = Condition.new({ 'not system:Windows' })
+	test.isFalse(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS' }))
+end
+
+
+function ConditionTests.not_asStringInline_withMissingValue()
+	local c = Condition.new({ 'system:not Windows' })
+	test.isTrue(c:isSatisfiedBy({}))
+end
+
+
+function ConditionTests.not_asStringPrefix_withMissingValue()
+	local c = Condition.new({ 'not system:Windows' })
+	test.isTrue(c:isSatisfiedBy({}))
+end
+
+
+function ConditionTests.or_asKeyValue()
+	local c = Condition.new({ system = 'Windows or MacOS' })
+	test.isTrue(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS' }))
+	test.isFalse(c:isSatisfiedBy({ system = 'Linux' }))
+end
+
+
+function ConditionTests.or_asStringValue()
+	local c = Condition.new({ 'system:Windows or MacOS' })
+	test.isTrue(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS' }))
+	test.isFalse(c:isSatisfiedBy({ system = 'Linux' }))
+end
+
+
+function ConditionTests.or_asStringValue_withMixedFields()
+	local c = Condition.new({ 'system:Windows or kind:ConsoleApplication' })
+	test.isTrue(c:isSatisfiedBy({ system = 'Windows' }))
+	test.isTrue(c:isSatisfiedBy({ kind = 'ConsoleApplication' }))
+	test.isFalse(c:isSatisfiedBy({ system = 'Linux' }))
+	test.isFalse(c:isSatisfiedBy({ kind = 'SharedLibrary' }))
+end
+
+
+function ConditionTests.mixedOperators_withLeadingNot()
+	local c = Condition.new({ 'not system:Windows or kind:not ConsoleApplication' })
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS', kind = 'SharedLibrary' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'Windows', kind = 'SharedLibrary' }))
+	test.isTrue(c:isSatisfiedBy({ system = 'MacOS', kind = 'ConsoleApplication' }))
+	test.isFalse(c:isSatisfiedBy({ system = 'Windows', kind = 'ConsoleApplication' }))
 end

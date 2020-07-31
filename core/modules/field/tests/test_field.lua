@@ -1,6 +1,6 @@
 local Field = require('field')
 
-local FieldTests = test.declare('field')
+local FieldTests = test.declare('FieldTests')
 
 
 local stringField, listField
@@ -131,6 +131,10 @@ function FieldTests.contains_isTrue_onListValueMatch()
 	test.isTrue(listField:contains({ 'x', 'y' }, 'x'))
 end
 
-function FieldTests.contains_isFalse_onListValueMisatch()
+function FieldTests.contains_isFalse_onListValueMismatch()
 	test.isFalse(listField:contains({ 'x', 'y' }, 'z'))
+end
+
+function FieldTests.contains_isFalse_onPartialMatch()
+	test.isFalse(stringField:contains('partial', 'part'))
 end
