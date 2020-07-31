@@ -228,7 +228,7 @@ function Condition._test(operation, values, allowNil)
 			result = allowNil
 		else
 			local field = Field.get(fieldName)
-			result = Field.contains(field, testValue, pattern)
+			result = Field.contains(field, testValue, pattern, true)
 		end
 
 	elseif op == OP_AND then

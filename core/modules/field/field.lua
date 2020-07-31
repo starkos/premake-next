@@ -97,18 +97,20 @@ end
 -- Tests a pattern against field value(s); returns true if the pattern can be matched.
 ---
 
-function Field.contains(self, value, pattern)
+function Field.contains(self, value, pattern, plain)
 	-- just to get things going
 	if type(value) == 'table' then
 		for i = 1, #value do
 			local value = value[i]
-			if string.match(value, pattern) == value then
+			local startAt, endAt = string.find(value, pattern, 1, plain)
+			if (startAt == 1 and endAt == #value) then
 				return true
 			end
 		end
 		return false
 	else
-		return (string.match(value, pattern) == value)
+		local startAt, endAt = string.find(value, pattern, 1, plain)
+		return (startAt == 1 and endAt == #value)
 	end
 end
 
