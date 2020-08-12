@@ -5,15 +5,10 @@
 ---
 
 
-local Field = {}
+local Field = declareType('Field')
 
 local _registeredFields = {}
 
-local _metatable = { -- set up ':' style calling
-	__index = function(self, key)
-		return Field[key]
-	end
-}
 
 ---
 -- Create and register a new field.
@@ -33,11 +28,11 @@ local _metatable = { -- set up ':' style calling
 ---
 
 function Field.new(definition)
-	local field = setmetatable({
+	local field = instantiateType(Field, {
 		name = definition.name,
 		kind = definition.kind,
 		allowed = definition.allowed
-	}, _metatable)
+	})
 
 	_registeredFields[field.name] = field
 	return field

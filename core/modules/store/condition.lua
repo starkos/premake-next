@@ -10,7 +10,7 @@
 
 local Field = require('field')
 
-local Condition = {}
+local Condition = declareType('Condition')
 
 local OP_TEST = 'TEST'
 local OP_AND = 'AND'
@@ -18,13 +18,6 @@ local OP_OR = 'OR'
 local OP_NOT = 'NOT'
 
 local ALLOW_NIL = true
-
-
-local _metatable = { -- set up ':' style calling
-	__index = function(self, key)
-		return Condition[key]
-	end
-}
 
 
 ---
@@ -37,10 +30,10 @@ local _metatable = { -- set up ':' style calling
 ---
 
 function Condition.new(clauses)
-	local self = setmetatable({
+	local self = instantiateType(Condition, {
 		_fieldsTested = {},
 		_rootTest = nil
-	}, _metatable)
+	})
 
 	local ok, result = pcall(function()
 		return Condition._parseCondition(self, clauses)
@@ -100,10 +93,10 @@ function Condition.merge(outer, inner)
 	local rootTest = table.joinArrays(outer._rootTest, inner._rootTest)
 	rootTest._op = OP_AND
 
-	return setmetatable({
+	return instantiateType(Condition, {
 		_fieldsTested = fieldsTested,
 		_rootTest = rootTest
-	}, _metatable)
+	})
 end
 
 
