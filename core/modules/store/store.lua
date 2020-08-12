@@ -9,14 +9,7 @@ local Field = require('field')
 local Condition = require('condition')
 local Query = require('query')
 
-local Store = {}
-
-
-local _metatable = { -- set up ':' style calling
-	__index = function(self, key)
-		return Store[key]
-	end
-}
+local Store = declareType('Store')
 
 
 ---
@@ -27,12 +20,12 @@ local _metatable = { -- set up ':' style calling
 ---
 
 function Store.new()
-	local store = setmetatable({
+	local store = instantiateType(Store, {
 		_conditions = {},
 		_currentCondition = nil,
 		_blocks = {},
 		_currentBlock = nil
-	}, _metatable)
+	})
 
 	Store.pushCondition(store, {})
 	return store

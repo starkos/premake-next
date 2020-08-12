@@ -15,17 +15,10 @@ local REMOVE = 'REMOVE'
 local IGNORE = 'IGNORE'
 local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
 
-local Query = {}
+local Query = declareType('Query')
 
 Query.ADD = ADD
 Query.REMOVE = REMOVE
-
-
-local _metatable = { -- set up ':' style calling
-	__index = function(self, key)
-		return Query[key]
-	end
-}
 
 
 ---
@@ -40,27 +33,22 @@ local _metatable = { -- set up ':' style calling
 ---
 
 function Query.new(blocks, env)
-	return setmetatable({
-		-- The list of blocks to be queried, received from a store, should be considered immutable
-		_sourceBlocks = blocks,
-
-		-- Once `evaluate()` is called, the list of blocks which apply to this query
-		_enabledBlocks = nil,
-
-		-- TODO: explain what these are
+	return instantiateType(Query, {
+		_sourceBlocks = blocks,   -- The list of blocks to be queried,;received from a store, should be considered immutable
+		_enabledBlocks = nil,     -- Once `evaluate()` is called, the list of blocks which apply to this query
 		_outer = nil,
 		_env = Query._normalize(env),
 		_localScope = EMPTY,
 		_fullScope = EMPTY,
 		_requiredScope = EMPTY,
 		_isInheriting = false
-	}, _metatable)
+	})
 end
 
 
 function Query._with(self, newValues)
-	local newQuery = table.mergeKeys(self, newValues)
-	return setmetatable(newQuery, _metatable)
+	local mergedValues = table.mergeKeys(self, newValues)
+	return instantiateType(Query, mergedValues)
 end
 
 

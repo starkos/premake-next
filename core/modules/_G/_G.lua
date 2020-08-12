@@ -12,6 +12,29 @@ local m = {}
 m._onRequireCallbacks = {}
 
 
+local function _typeIndexer(self, key)
+	return self[key]
+end
+
+
+---
+-- Declare a new "type", which is basically a namespace with support for ":" calling,
+-- like Lua's built-in string library.
+---
+
+function declareType(typeName)
+	local newType = {
+		__typeName = typeName
+	}
+
+	newType.__index = function(self, key)
+		return newType[key]
+	end
+
+	return newType
+end
+
+
 function doFile(filename, ...)
 	local chunk, err = loadFile(filename)
 	if err then
@@ -29,6 +52,16 @@ function doFileOpt(filename, ...)
 	if chunk then
 		return (chunk(...))
 	end
+end
+
+
+---
+-- Instantiate a new instance of a "type", which may call into the type's methods using
+-- Lua's ":" syntax, e.g. `newType:myMethod()`.
+---
+
+function instantiateType(type, initialValues)
+	return setmetatable(initialValues, type)
 end
 
 
@@ -87,6 +120,18 @@ function tryRegister(module)
 
 	package.registered[module] = scriptPath;
 	return true
+end
+
+
+function typeOf(instance)
+	local ret
+
+	local metatable = getmetatable(instance)
+	if metatable ~= nil then
+		ret = metatable.__typeName
+	end
+
+	return ret or type(instance)
 end
 
 
