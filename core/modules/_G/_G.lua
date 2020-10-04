@@ -24,13 +24,20 @@ end
 -- like Lua's built-in string library.
 ---
 
-function declareType(typeName)
-	local newType = {
-		__typeName = typeName
-	}
+function declareType(typeName, extends)
+	local newType = table.mergeKeys(extends or EMPTY, {
+		__typeName = typeName,
+		__extends = extends
+	})
 
-	newType.__index = function(self, key)
-		return newType[key]
+	if extends ~= nil then
+		newType.__index = function(self, key)
+			return newType[key] or extends.__index(self, key)
+		end
+	else
+		newType.__index = function(self, key)
+			return newType[key]
+		end
 	end
 
 	return newType
