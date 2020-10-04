@@ -54,6 +54,15 @@ end
 
 
 ---
+-- Return the last value in an array.
+---
+
+function table.last(self)
+	return self[#self]
+end
+
+
+---
 -- Call a function on each key in the table and returns a new table with
 -- each value replaced by the return value of the function.
 ---
