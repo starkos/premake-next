@@ -9,9 +9,10 @@ local terminal = require('terminal')
 
 local m = {}
 
-m._suites = {}
-m._onBeforeTestCallbacks = {}
-m._onAfterTestCallbacks = {}
+local _allowedTestPatterns = {}
+local _suites = {}
+local _onBeforeTestCallbacks = {}
+local _onAfterTestCallbacks = {}
 
 local _isVerbose
 
@@ -76,7 +77,7 @@ function m.runTests()
 
 	local failedTests = {}
 
-	for suiteName in pairs(m._suites) do
+	for suiteName in pairs(_suites) do
 		local tests = m.collectTestsForSuite(suiteName)
 		if #tests > 0 then
 		   local passed, failed = m.runTestSuite(suiteName, tests, failedTests)
@@ -116,18 +117,24 @@ end
 
 
 function m.parseAllowedTestPatterns()
-	m._allowedTestPatterns = {}
+	_allowedTestPatterns = {}
 
 	local testOnly = options.valueOf('--test-only')
 
-	if not testOnly then
-		table.insert(m._allowedTestPatterns, '.*')
-	else
-		local patterns = string.split(testOnly, ',')
-		for i = 1, #patterns do
-			local pattern = string.patternFromWildcards(patterns[i])
-			table.insert(m._allowedTestPatterns, pattern)
+	local patterns = string.split(testOnly, ',')
+
+	for i = 1, #patterns do
+		local pattern = patterns[i]
+
+		-- if there is no '.', assume it's a suite name
+		if not string.contains(pattern, '.') then
+			pattern = pattern .. '%.*'
 		end
+
+		-- expand '*'
+		pattern = string.patternFromWildcards(pattern)
+
+		table.insert(_allowedTestPatterns, pattern)
 	end
 end
 
@@ -135,7 +142,7 @@ end
 function m.collectTestsForSuite(suiteName)
 	local tests = {}
 
-	for testName in pairs(m._suites[suiteName]) do
+	for testName in pairs(_suites[suiteName]) do
 		if m.isValidTest(suiteName, testName) and m.isAllowedTest(suiteName, testName) then
 			table.insert(tests, testName)
 		end
@@ -173,7 +180,7 @@ function m.runIndividualTest(suiteName, testName)
 	_logVerbose(GREEN, '[ RUN      ]', ' %s.%s', suiteName, testName)
 	local startTime = os.clock()
 
-	local suite = m._suites[suiteName]
+	local suite = _suites[suiteName]
 	_SCRIPT_DIR = suite._SCRIPT_DIR
 
 	local ok, err = m.runSuiteSetup(suiteName)
@@ -210,14 +217,13 @@ end
 
 
 function m.runSuiteSetup(suiteName)
-	local callbacks = m._onBeforeTestCallbacks
-
-	for i = 1, #callbacks do
-		_SCRIPT_DIR = callbacks._SCRIPT_DIR
-		callbacks[i]()
+	for i = 1, #_onBeforeTestCallbacks do
+		local callback = _onBeforeTestCallbacks[i]
+		-- _SCRIPT_DIR = callback._SCRIPT_DIR
+		callback()
 	end
 
-	local suite = m._suites[suiteName]
+	local suite = _suites[suiteName]
 	_SCRIPT_DIR = suite._SCRIPT_DIR
 
 	if type(suite.setup) == 'function' then
@@ -231,7 +237,7 @@ end
 function m.runSuiteTeardown(suiteName)
 	local ok, err
 
-	local suite = m._suites[suiteName]
+	local suite = _suites[suiteName]
 	_SCRIPT_DIR = suite._SCRIPT_DIR
 
 	if type(suite.teardown) == 'function' then
@@ -240,11 +246,10 @@ function m.runSuiteTeardown(suiteName)
 		ok = true
 	end
 
-	local callbacks = m._onAfterTestCallbacks
-
-	for i = #callbacks, 1, -1 do
-		_SCRIPT_DIR = callbacks._SCRIPT_DIR
-		callbacks[i]()
+	for i = #_onAfterTestCallbacks, 1, -1 do
+		local callback = _onAfterTestCallbacks[i]
+		-- _SCRIPT_DIR = callbacks._SCRIPT_DIR
+		callback()
 	end
 
 	return ok, err
@@ -252,7 +257,7 @@ end
 
 
 function m.declare(suiteName)
-	if m._suites[suiteName] then
+	if _suites[suiteName] then
 		error(string.format('Duplicate test suite `%s`', suiteName), 2)
 	end
 
@@ -277,7 +282,7 @@ function m.declare(suiteName)
 
 	suite._SCRIPT_DIR = _SCRIPT_DIR
 
-	m._suites[suiteName] = suite
+	_suites[suiteName] = suite
 	return suite
 end
 
@@ -285,9 +290,8 @@ end
 function m.isAllowedTest(suiteName, testName)
 	local fullTestName = string.format('%s.%s', suiteName, testName)
 
-	local patterns = m._allowedTestPatterns
-	for i = 1, #patterns do
-		if string.match(fullTestName, patterns[i]) == fullTestName then
+	for i = 1, #_allowedTestPatterns do
+		if string.match(fullTestName, _allowedTestPatterns[i]) == fullTestName then
 			return true
 		end
 	end
@@ -297,18 +301,18 @@ end
 
 
 function m.isValidTest(suiteName, testName)
-	local test = m._suites[suiteName][testName]
+	local test = _suites[suiteName][testName]
 	return type(test) == 'function' and testName ~= 'setup' and testName ~= 'teardown'
 end
 
 
 function m.onBeforeTest(fn)
-	table.insert(m._onBeforeTestCallbacks, fn)
+	table.insert(_onBeforeTestCallbacks, fn)
 end
 
 
 function m.onAfterTest(fn)
-	table.insert(m._onAfterTestCallbacks, fn)
+	table.insert(_onAfterTestCallbacks, fn)
 end
 
 
