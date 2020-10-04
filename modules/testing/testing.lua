@@ -109,7 +109,11 @@ end
 
 
 function m.loadAllTests()
-	local suites = os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', 'test_*.lua'))
+	local suites = table.joinArrays(
+		os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', '*_tests.lua')),
+		os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', 'test_*.lua'))
+	)
+
 	for i = 1, #suites do
 		dofile(suites[i])
 	end

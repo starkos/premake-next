@@ -1,6 +1,6 @@
 local table = require('table')
 
-local TableTests = test.declare('table')
+local TableTests = test.declare('TableTests')
 
 
 ---

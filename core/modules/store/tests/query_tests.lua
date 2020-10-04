@@ -1,6 +1,6 @@
+local Query = require('../query')
 local Store = require('store')
 
-local Query = require('../query')
 local QueryTests = test.declare('QueryTests')
 
 
