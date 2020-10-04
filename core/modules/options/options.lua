@@ -2,39 +2,42 @@
 -- Command line option handling.
 ---
 
-local p = require('premake')
+local premake = require('premake')
 
-local m = {}
+local options = {}
 
-m._definitions = {}
-m._values = nil
+options.KIND_ACTION = 'action'
+options.KIND_OPTION = 'option'
+
+local _definitions = {}
+local _values = nil
 
 
 function commandLineOption(definition)
-	local ok, err = m.register(definition)
+	local ok, err = options.register(definition)
 	if not ok then
 		error(err, 2)
 	end
 end
 
 
-function m.register(definition)
-	local ok, err = p.checkRequired(definition, 'trigger', 'description')
+function options.register(definition)
+	local ok, err = premake.checkRequired(definition, 'trigger', 'description')
 	if not ok then
 		return false, err
 	end
 
 	-- store it
-	m._definitions[definition.trigger] = definition
+	_definitions[definition.trigger] = definition
 
 	-- new definition requires option values to be parsed again
-	m._values = nil
+	_values = nil
 
 	return true
 end
 
 
-function m.all()
+function options.all()
 	local i = 0
 
 	return function()
@@ -42,10 +45,10 @@ function m.all()
 			i = i + 1
 			local arg = _ARGS[i]
 
-			local trigger, value = m._splitTriggerFromValueIfPresent(arg)
+			local trigger, value = options._splitTriggerFromValueIfPresent(arg)
 
 			if not value then
-				local def = m.definitionOf(trigger)
+				local def = options.definitionOf(trigger)
 				if def and def.value then
 					i = i + 1
 					value = _ARGS[i]
@@ -60,18 +63,18 @@ function m.all()
 end
 
 
-function m.definitionOf(trigger)
-	return m._definitions[trigger]
+function options.definitionOf(trigger)
+	return _definitions[trigger]
 end
 
 
-function m.each()
-	local it = m.all()
+function options.each()
+	local it = options.all()
 
 	return function()
 		local trigger, value = it()
 		while trigger do
-			local def = m.definitionOf(trigger)
+			local def = options.definitionOf(trigger)
 			if def then
 				return trigger, value
 			end
@@ -81,18 +84,18 @@ function m.each()
 end
 
 
-function m.execute(trigger, value)
-	local def = m.definitionOf(trigger)
+function options.execute(trigger, value)
+	local def = options.definitionOf(trigger)
 	if def and def.execute then
 		def.execute(value)
 	end
 end
 
 
-function m.getDefinitions()
+function options.getDefinitions()
 	local result = {}
 
-	for _, def in pairs(m._definitions) do
+	for _, def in pairs(_definitions) do
 		table.insert(result, def)
 	end
 
@@ -104,23 +107,23 @@ function m.getDefinitions()
 end
 
 
-function m.getKind(trigger)
+function options.getKind(trigger)
 	if string.startsWith(trigger, '-') then
-		return 'option'
+		return options.KIND_OPTION
 	else
-		return 'action'
+		return options.KIND_ACTION
 	end
 end
 
 
-function m.isSet(trigger)
-	return (m.valueOf(trigger) ~= nil)
+function options.isSet(trigger)
+	return (options.valueOf(trigger) ~= nil)
 end
 
 
-function m.validate()
-	for trigger, _ in m.all() do
-		local def = m.definitionOf(trigger)
+function options.validate()
+	for trigger, _ in options.all() do
+		local def = options.definitionOf(trigger)
 		if not def then
 			return false, string.format('invalid option "%s"', trigger)
 		end
@@ -129,30 +132,18 @@ function m.validate()
 end
 
 
-function m.valueOf(trigger)
-	if not m._values then
-		m._values = m._parseArgs()
+function options.valueOf(trigger)
+	if not _values then
+		_values = {}
+		for trigger, value in options.each() do
+			_values[trigger] = value
+		end
 	end
 
-	local def = m.definitionOf(trigger)
+	local def = options.definitionOf(trigger)
 	if def then
-		return m._values[def.trigger] or def.default
+		return _values[def.trigger] or def.default
 	end
-end
-
-
----
--- Iterate over the command line arguments and return a table of trigger-value
--- pairs for any registered options found.
----
-function m._parseArgs()
-	local values = {}
-
-	for trigger, value in m.each() do
-		values[trigger] = value
-	end
-
-	return values
 end
 
 
@@ -160,7 +151,7 @@ end
 -- If the arg is of the form "trigger=value", split on the "=" and return
 -- the split trigger-value pair.
 ---
-function m._splitTriggerFromValueIfPresent(arg)
+function options._splitTriggerFromValueIfPresent(arg)
 	local splitAt = string.find(arg, '=', 1, true)
 	if splitAt then
 		return string.sub(arg, 1, splitAt - 1), string.sub(arg, splitAt + 1)
@@ -170,4 +161,4 @@ function m._splitTriggerFromValueIfPresent(arg)
 end
 
 
-return m
+return options

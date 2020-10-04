@@ -4,13 +4,13 @@
 -- Prints the help text shown when the `--help` option is specified on the command line.
 ---
 
-local m = {}
+local help = {}
 
 local options = require('options')
 local path = require('path')
 
 
-function m.printHelp()
+function help.printHelp()
 	-- display the basic usage
 	printf("Premake %s, a build script generator", _PREMAKE.VERSION)
 	printf(_PREMAKE.COPYRIGHT)
@@ -21,14 +21,14 @@ function m.printHelp()
 
 	local definitions = options.getDefinitions()
 
-	local categories = m._collectCategories(definitions)
+	local categories = help._collectCategories(definitions)
 
 	-- print out the options first, sorted by category
 	for i = 1, #categories do
 		local cat = categories[i]
-		local items = m._collectItems(definitions, 'option', cat)
+		local items = help._collectItems(definitions, options.KIND_OPTION, cat)
 		if #items > 0 then
-			m._printItems(items, 'OPTIONS', cat)
+			help._printItems(items, 'OPTIONS', cat)
 			print()
 		end
 	end
@@ -36,9 +36,9 @@ function m.printHelp()
 	-- then actions, sorted by category
 	for i = 1, #categories do
 		local cat = categories[i]
-		local items = m._collectItems(definitions, 'action', cat)
+		local items = help._collectItems(definitions, options.KIND_ACTION, cat)
 		if #items > 0 then
-			m._printItems(items, 'ACTIONS', cat)
+			help._printItems(items, 'ACTIONS', cat)
 			print()
 		end
 	end
@@ -47,7 +47,7 @@ function m.printHelp()
 end
 
 
-function m._collectCategories(definitions)
+function help._collectCategories(definitions)
 	local categories = {}
 
 	for i = 1, #definitions do
@@ -65,7 +65,7 @@ function m._collectCategories(definitions)
 end
 
 
-function m._collectItems(definitions, kind, category)
+function help._collectItems(definitions, kind, category)
 	local items = {}
 
 	for i = 1, #definitions do
@@ -84,7 +84,7 @@ function m._collectItems(definitions, kind, category)
 end
 
 
-function m._printItems(items, kind, category)
+function help._printItems(items, kind, category)
 	if category == '' then
 		category = 'General'
 	end
@@ -135,4 +135,4 @@ function m._printItems(items, kind, category)
 end
 
 
-return m
+return help
