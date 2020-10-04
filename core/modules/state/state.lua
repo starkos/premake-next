@@ -21,6 +21,22 @@ State.__index = function(self, key)
 end
 
 
+-- local function _new(query, env, isInheriting)
+-- 	return instantiateType(State, {
+-- 		_query = query,
+-- 		_env = env,
+-- 		_isInheriting = isInheriting,
+-- 		_blocks = EMPTY
+-- 	})
+-- end
+
+local function _new(values)
+	local newState = instantiateType(State, values)
+	newState._blocks = EMPTY
+	return newState
+end
+
+
 ---
 -- Creates a new "root" state, given a configuration store and the initial environment values.
 --
@@ -31,23 +47,10 @@ end
 ---
 
 function State.new(store, env)
-	return instantiateType(State, {
+	return _new({
 		_query = Query.new(Store.blocks(store)),
-		_env = env or EMPTY,
-		_blocks = EMPTY,
-		_emptyValues = nil
+		_env = env or EMPTY
 	})
-end
-
-
----
--- Clone and return a new state, overlaying the values provided.
----
-
-function State._with(self, newValues)
-	return instantiateType(State, table.mergeKeys(self, newValues, {
-		_blocks = EMPTY
-	}))
 end
 
 
@@ -148,21 +151,6 @@ end
 
 
 ---
--- Returns a new state with value inheritance enabled. The query scope and environment
--- are the same as the state instance on which `withInheritance()` is called.
---
--- When inheritance is enabled, values from the immediate outer scope (the "parent"
--- query, on which `select()` was called) are included in the results.
----
-
-function State.withInheritance(self)
-	return State._with(self, {
-		_query = Query.withInheritance(self._query)
-	})
-end
-
-
----
 -- Selects a new state out of an existing one, e.g. a specific project from
 -- a workspace.
 --
@@ -175,10 +163,49 @@ end
 ---
 
 function State.select(self, scope, extraEnv)
-	return State._with(self, {
+	return _new({
 		_query = Query.select(self._query, scope),
 		_env = table.mergeKeys(self._env, scope, extraEnv or EMPTY)
 	})
+end
+
+
+---
+-- Returns a new state with value inheritance enabled. The query scope and environment
+-- are the same as the state instance on which `withInheritance()` is called.
+--
+-- When inheritance is enabled, values from the immediate outer scope (the "parent"
+-- query, on which `select()` was called) are included in the results.
+---
+
+function State.withInheritance(self)
+	if self._withInheritance == nil then
+		if self._isInheriting then
+			self._withInheritance = self
+		else
+			self._withInheritance = _new({
+				_query = Query.withInheritance(self._query),
+				_env = self._env,
+				_isInheriting = true,
+				_withoutInheritance = self
+			})
+		end
+	end
+	return self._withInheritance
+end
+
+
+
+---
+-- Returns a new state with value inheritance disabled. The query scope and environment
+-- are the same as the state instance on which `withoutInheritance()` is called.
+--
+-- When inheritance is disabled, values from the immediate outer scope (the "parent"
+-- query, on which `select()` was called) are not included in the results.
+---
+
+function State.withoutInheritance(self)
+	return self._withoutInheritance or self
 end
 
 

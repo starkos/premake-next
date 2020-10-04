@@ -1,8 +1,8 @@
-local Query = {}
-
 local Block = require('block')
 local Condition = require('condition')
 local Field = require('field')
+
+local Query = {}
 
 local UNKNOWN = 'UNKNOWN'
 local ADD = 'ADD'
@@ -19,8 +19,7 @@ function Query.new(blocks)
 		_outerQuery = nil,
 		_localScope = EMPTY,
 		_fullScope = EMPTY,
-		_requiredScope = EMPTY,
-		_isInheriting = false
+		_requiredScope = EMPTY
 	}
 end
 
@@ -260,8 +259,7 @@ end
 function Query.withInheritance(self)
 	if self._outerQuery ~= nil then
 		return Query._with(self, {
-			_requiredScope = self._outerQuery._requiredScope,
-			_isInheriting = true
+			_requiredScope = self._outerQuery._requiredScope
 		})
 	else
 		return self
