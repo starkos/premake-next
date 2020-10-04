@@ -12,5 +12,6 @@ commandLineOption {
 	trigger = '--test-only',
 	value = 'SUITE[.TEST]',
 	category = 'Testing',
-	description = 'Run only the specified suite or test'
+	description = 'Run only the specified suite or test',
+	default = '*'
 }
