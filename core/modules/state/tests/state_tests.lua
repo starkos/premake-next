@@ -1,44 +1,44 @@
-local Query = require('../query')
-local Store = require('store')
+local StateTests = test.declare('state')
 
-local QueryTests = test.declare('query')
+local Store = require('store')
+local State = require('state')
 
 
 local store
 
-function QueryTests.setup()
+function StateTests.setup()
 	store = Store.new()
 end
 
 
 ---
--- `fetch()` should be able to retrieve values when no conditions are involved.
+-- `get()` should be able to retrieve values when no conditions are involved.
 ---
 
-function QueryTests.fetch_returnsSimpleValue_onNoConditions()
+function StateTests.get_returnsSimpleValue_onNoConditions()
 	store:addValue('kind', 'StaticLibrary')
-	test.isEqual('StaticLibrary', store:query():fetch('kind'))
+	test.isEqual('StaticLibrary', State.new(store):get('kind'))
 end
 
 
-function QueryTests.fetch_returnsCollectionValue_onGlobalScope()
+function StateTests.get_returnsCollectionValue_onGlobalScope()
 	store:addValue('defines', { 'A', 'B' })
-	test.isEqual({ 'A', 'B' }, store:query():fetch('defines'))
+	test.isEqual({ 'A', 'B' }, State.new(store):get('defines'))
 end
 
 
 ---
--- `fetch()` should return a default "empty" value for fields which have not been
+-- `get()` should return a default "empty" value for fields which have not been
 -- set: `nil` for simple fields, and an empty collection for collection fields.
 ---
 
-function QueryTests.fetch_returnsNil_onUnsetString()
-	test.isNil(store:query():fetch('kind'))
+function StateTests.get_returnsNil_onUnsetString()
+	test.isNil(State.new(store):get('kind'))
 end
 
 
-function QueryTests.fetch_returnsEmptyList_onUnsetList()
-	test.isEqual({}, store:query():fetch('defines'))
+function StateTests.get_returnsEmptyList_onUnsetList()
+	test.isEqual({}, State.new(store):get('defines'))
 end
 
 
@@ -46,23 +46,23 @@ end
 -- Values placed behind a condition should not be returned if condition is not met.
 ---
 
-function QueryTests.fetch_returnsNil_onUnmetStringCondition()
+function StateTests.get_returnsNil_onUnmetStringCondition()
 	store
 		:pushCondition({ system = 'Windows' })
 		:addValue('kind', 'SharedLibrary')
 		:popCondition()
 
-	test.isNil(store:query():fetch('kind'))
+	test.isNil(State.new(store):get('kind'))
 end
 
 
-function QueryTests.fetch_returnsNil_onUnmetListCondition()
+function StateTests.get_returnsNil_onUnmetListCondition()
 	store
 		:pushCondition({ defines = 'X' })
 		:addValue('kind', 'SharedLibrary')
 		:popCondition()
 
-	test.isNil(store:query():fetch('kind'))
+	test.isNil(State.new(store):get('kind'))
 end
 
 
@@ -70,25 +70,25 @@ end
 -- Values behind a condition should be available once that condition is met.
 ---
 
-function QueryTests.fetch_returnsValue_onStringConditionMet()
+function StateTests.get_returnsValue_onStringConditionMet()
 	store
 		:pushCondition({ system = 'Windows' })
 		:addValue('kind', 'StaticLibrary')
 		:popCondition()
 
-	local query = store:query({ system = 'Windows' })
-	test.isEqual('StaticLibrary', query:fetch('kind'))
+	local state = State.new(store, { system = 'Windows' })
+	test.isEqual('StaticLibrary', state:get('kind'))
 end
 
 
-function QueryTests.fetch_returnsValue_onListConditionMet()
+function StateTests.get_returnsValue_onListConditionMet()
 	store
 		:pushCondition{ defines = 'X' }
 		:addValue('kind', 'SharedLibrary')
 		:popCondition()
 
-	local query = store:query({ defines = 'X' })
-	test.isEqual('SharedLibrary', query:fetch('kind'))
+	local state = State.new(store, { defines = 'X' })
+	test.isEqual('SharedLibrary', state:get('kind'))
 end
 
 
@@ -97,7 +97,7 @@ end
 -- should be met to access values.
 ---
 
-function QueryTests.fetch_includesNestedBlock_whenCombinedConditionsMet()
+function StateTests.get_includesNestedBlock_whenCombinedConditionsMet()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', 'WORKSPACE')
@@ -105,12 +105,12 @@ function QueryTests.fetch_includesNestedBlock_whenCombinedConditionsMet()
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-	local query = store:query({ workspaces = 'Workspace1', projects = 'Project1' })
-	test.isEqual({ 'WORKSPACE', 'PROJECT' }, query:fetch('defines'))
+	local state = State.new(store, { workspaces = 'Workspace1', projects = 'Project1' })
+	test.isEqual({ 'WORKSPACE', 'PROJECT' }, state:get('defines'))
 end
 
 
-function QueryTests.fetch_excludesNestedBlock_whenCombinedConditionsNotMet()
+function StateTests.get_excludesNestedBlock_whenCombinedConditionsNotMet()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', 'WORKSPACE')
@@ -118,8 +118,8 @@ function QueryTests.fetch_excludesNestedBlock_whenCombinedConditionsNotMet()
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-	local query = store:query({ projects = 'Project1' })
-	test.isEqual({}, query:fetch('defines'))
+	local state = State.new(store, { projects = 'Project1' })
+	test.isEqual({}, state:get('defines'))
 end
 
 
@@ -128,7 +128,7 @@ end
 -- outside of that scope should not be included in the results.
 ---
 
-function QueryTests.select_limitsToSelectedScope_onTopLevelScopes()
+function StateTests.select_limitsToSelectedScope_onTopLevelScopes()
 	store
 		:addValue('defines', 'GLOBAL')
 
@@ -143,14 +143,14 @@ function QueryTests.select_limitsToSelectedScope_onTopLevelScopes()
 		:pushCondition({ configurations = 'Debug' })
 		:addValue('defines', 'DEBUG"')
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'WORKSPACE' }, workspace:fetch('defines'))
+	test.isEqual({ 'WORKSPACE' }, workspace:get('defines'))
 end
 
 
-function QueryTests.select_limitsToSelectedScope_onNestedScopes()
+function StateTests.select_limitsToSelectedScope_onNestedScopes()
 	store
 		:addValue('defines', 'GLOBAL')
 
@@ -163,25 +163,25 @@ function QueryTests.select_limitsToSelectedScope_onNestedScopes()
 		:pushCondition({ configurations = 'Debug' })
 		:addValue('defines', 'DEBUG"')
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'WORKSPACE' }, workspace:fetch('defines'))
+	test.isEqual({ 'WORKSPACE' }, workspace:get('defines'))
 end
 
 
-function QueryTests.select_excludesValuesFromOuter_onNoInherit()
+function StateTests.select_excludesValuesFromOuter_onNoInherit()
 	store
 		:pushCondition({ configuration = 'Debug' })
 		:addValue('defines', 'DEBUG')
 		:popCondition()
 
-	local debugCfg = store:query()
+	local debugCfg = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
 		:select({ configurations = 'Debug' })
 
-	test.isEqual({}, debugCfg:fetch('defines'))
+	test.isEqual({}, debugCfg:get('defines'))
 end
 
 
@@ -190,7 +190,7 @@ end
 -- the immediate broader scope.
 ---
 
-function QueryTests.inheritValues_includesImmediateBroaderScope_onTopLevelScopes()
+function StateTests.withInheritance_includesImmediateBroaderScope_onTopLevelScopes()
 	store
 		:addValue('defines', 'GLOBAL')
 
@@ -203,15 +203,15 @@ function QueryTests.inheritValues_includesImmediateBroaderScope_onTopLevelScopes
 		:addValue('defines', 'PROJECT')
 		:popCondition()
 
-	local project = store:query()
+	local project = State.new(store)
 		:select({ workspaces = 'Workspace1' }) -- does not inherit
-		:select({ projects = 'Project1' }):inheritValues()
+		:select({ projects = 'Project1' }):withInheritance()
 
-	test.isEqual({ 'WORKSPACE', 'PROJECT' }, project:fetch('defines'))
+	test.isEqual({ 'WORKSPACE', 'PROJECT' }, project:get('defines'))
 end
 
 
-function QueryTests.inheritValues_includesImmediateBroaderScope_onNestedScopes()
+function StateTests.withInheritance_includesImmediateBroaderScope_onNestedScopes()
 	store
 		:addValue('defines', 'GLOBAL')
 
@@ -221,11 +221,11 @@ function QueryTests.inheritValues_includesImmediateBroaderScope_onNestedScopes()
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-	local project = store:query()
+	local project = State.new(store)
 		:select({ workspaces = 'Workspace1' }) -- does not inherit
-		:select({ projects = 'Project1' }):inheritValues()
+		:select({ projects = 'Project1' }):withInheritance()
 
-	test.isEqual({ 'WORKSPACE', 'PROJECT' }, project:fetch('defines'))
+	test.isEqual({ 'WORKSPACE', 'PROJECT' }, project:get('defines'))
 end
 
 
@@ -234,7 +234,7 @@ end
 -- enabled, those inherited values should also be included in the results.
 ---
 
-function QueryTests.inheritValues_includesValuesInheritedByBroaderScope()
+function StateTests.withInheritance_includesValuesInheritedByBroaderScope()
 	store
 		:addValue('defines', 'GLOBAL')
 
@@ -245,11 +245,11 @@ function QueryTests.inheritValues_includesValuesInheritedByBroaderScope()
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-	local project = store:query()
-		:select({ workspaces = 'Workspace1' }):inheritValues()
-		:select({ projects = 'Project1' }):inheritValues()
+	local project = State.new(store)
+		:select({ workspaces = 'Workspace1' }):withInheritance()
+		:select({ projects = 'Project1' }):withInheritance()
 
-	test.isEqual({ 'GLOBAL', 'WORKSPACE', 'PROJECT' }, project:fetch('defines'))
+	test.isEqual({ 'GLOBAL', 'WORKSPACE', 'PROJECT' }, project:get('defines'))
 end
 
 
@@ -263,7 +263,7 @@ end
 -- was not removed.
 ---
 
-function QueryTests.remove_byWorkspace()
+function StateTests.remove_byWorkspace()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
@@ -273,14 +273,14 @@ function QueryTests.remove_byWorkspace()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
 end
 
 
-function QueryTests.remove_byProject()
+function StateTests.remove_byProject()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -290,14 +290,14 @@ function QueryTests.remove_byProject()
 		:pushCondition({ projects = 'Project1' })
 		:removeValue('defines', 'VALUE2')
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
 end
 
 
-function QueryTests.remove_byNestedProject()
+function StateTests.remove_byNestedProject()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -306,14 +306,14 @@ function QueryTests.remove_byNestedProject()
 		:pushCondition({ projects = 'Project1' })
 		:removeValue('defines', 'VALUE2')
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
 end
 
 
-function QueryTests.remove_byUnrelatedProject_isIgnored()
+function StateTests.remove_byUnrelatedProject_isIgnored()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -324,14 +324,14 @@ function QueryTests.remove_byUnrelatedProject_isIgnored()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, workspace:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, workspace:get('defines'))
 end
 
 
-function QueryTests.remove_byProject_appearsInOtherProjects()
+function StateTests.remove_byProject_appearsInOtherProjects()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1', 'Project2' })
@@ -345,11 +345,11 @@ function QueryTests.remove_byProject_appearsInOtherProjects()
 		:pushCondition({ projects = 'Project2' })
 		:popCondition()
 
-	local project2 = store:query()
+	local project2 = State.new(store)
 		:select({ workspaces = 'Workspace1'})
-		:select({ projects = 'Project2 '}):inheritValues()
+		:select({ projects = 'Project2 '}):withInheritance()
 
-	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, project2:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, project2:get('defines'))
 end
 
 
@@ -361,7 +361,7 @@ end
 -- the exported project or it won't be set at all.
 ---
 
-function QueryTests.remove_byProject_appearsInOtherProjects_noInheritance()
+function StateTests.remove_byProject_appearsInOtherProjects_noInheritance()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1', 'Project2' })
@@ -375,15 +375,15 @@ function QueryTests.remove_byProject_appearsInOtherProjects_noInheritance()
 		:pushCondition({ projects = 'Project2' })
 		:popCondition()
 
-	local project2 = store:query()
+	local project2 = State.new(store)
 		:select({ workspaces = 'Workspace1'})
 		:select({ projects = 'Project2 '})
 
-	test.isEqual({ 'VALUE2' }, project2:fetch('defines'))
+	test.isEqual({ 'VALUE2' }, project2:get('defines'))
 end
 
 
-function QueryTests.remove_fromConfig_byProject()
+function StateTests.remove_fromConfig_byProject()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1' })
@@ -398,15 +398,15 @@ function QueryTests.remove_fromConfig_byProject()
 		:removeValue('defines', 'DEBUG2')
 		:popCondition()
 
-	local debugCfg = store:query()
+	local debugCfg = State.new(store)
 		:select({ workspaces = 'Workspace1'})
-		:select({ configurations = 'Debug'}):inheritValues()
+		:select({ configurations = 'Debug'}):withInheritance()
 
-	test.isEqual({ 'DEBUG1', 'DEBUG3' }, debugCfg:fetch('defines'))
+	test.isEqual({ 'DEBUG1', 'DEBUG3' }, debugCfg:get('defines'))
 end
 
 
-function QueryTests.remove_fromConfig_byProject_noInheritance()
+function StateTests.remove_fromConfig_byProject_noInheritance()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', { 'Project1' })
@@ -421,11 +421,11 @@ function QueryTests.remove_fromConfig_byProject_noInheritance()
 		:removeValue('defines', 'DEBUG2')
 		:popCondition()
 
-	local debugCfg = store:query()
+	local debugCfg = State.new(store)
 		:select({ workspaces = 'Workspace1'})
 		:select({ configurations = 'Debug'})
 
-	test.isEqual({ 'DEBUG1', 'DEBUG3' }, debugCfg:fetch('defines'))
+	test.isEqual({ 'DEBUG1', 'DEBUG3' }, debugCfg:get('defines'))
 end
 
 
@@ -434,7 +434,7 @@ end
 -- things still work when spread over additional layers of scoping.
 ---
 
-function QueryTests.remove_byProjectConfig()
+function StateTests.remove_byProjectConfig()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -446,14 +446,14 @@ function QueryTests.remove_byProjectConfig()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-	local workspace = store:query()
+	local workspace = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
 end
 
 
-function QueryTests.remove_byProjectConfig_appearsInOtherConfigs()
+function StateTests.remove_byProjectConfig_appearsInOtherConfigs()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -465,16 +465,16 @@ function QueryTests.remove_byProjectConfig_appearsInOtherConfigs()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-	local releaseCfg = store:query()
+	local releaseCfg = State.new(store)
 		:select({ workspaces = 'Workspace1' })
-		:select({ projects = 'Project1' }):inheritValues()
-		:select({ configurations = 'Release' }):inheritValues()
+		:select({ projects = 'Project1' }):withInheritance()
+		:select({ configurations = 'Release' }):withInheritance()
 
-	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, releaseCfg:fetch('defines'))
+	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, releaseCfg:get('defines'))
 end
 
 
-function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_noInheritance()
+function StateTests.remove_byProjectConfig_appearsInOtherConfigs_noInheritance()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -486,16 +486,16 @@ function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_noInheritance()
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-	local releaseCfg = store:query()
+	local releaseCfg = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
 		:select({ configurations = 'Release' })
 
-	test.isEqual({ 'VALUE2' }, releaseCfg:fetch('defines'))
+	test.isEqual({ 'VALUE2' }, releaseCfg:get('defines'))
 end
 
 
-function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_mixedInheritance()
+function StateTests.remove_byProjectConfig_appearsInOtherConfigs_mixedInheritance()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('projects', 'Project1')
@@ -507,12 +507,12 @@ function QueryTests.remove_byProjectConfig_appearsInOtherConfigs_mixedInheritanc
 		:removeValue('defines', 'VALUE2')
 		:popCondition()
 
-	local releaseCfg = store:query()
+	local releaseCfg = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
-		:select({ configurations = 'Release' }):inheritValues()
+		:select({ configurations = 'Release' }):withInheritance()
 
-	test.isEqual({ 'VALUE2' }, releaseCfg:fetch('defines'))
+	test.isEqual({ 'VALUE2' }, releaseCfg:get('defines'))
 end
 
 
@@ -522,7 +522,7 @@ end
 -- until projects are configured later).
 ---
 
-function QueryTests.canEvaluateBlocksOutOfOrder()
+function StateTests.canEvaluateBlocksOutOfOrder()
 	store
 		:pushCondition({ kind = 'StaticLibrary' })
 		:addValue('defines', 'STATIC')
@@ -533,8 +533,8 @@ function QueryTests.canEvaluateBlocksOutOfOrder()
 		:addValue('defines', 'PROJECT')
 		:popCondition()
 
-	local project = store:query()
-		:select({ projects = 'Project1' }):inheritValues()
+	local project = State.new(store)
+		:select({ projects = 'Project1' }):withInheritance()
 
-	test.isEqual({ 'STATIC', 'PROJECT' }, project:fetch('defines'))
+	test.isEqual({ 'STATIC', 'PROJECT' }, project:get('defines'))
 end

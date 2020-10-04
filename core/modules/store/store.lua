@@ -4,12 +4,13 @@
 -- exporters.
 ---
 
-local Field = require('field')
-
-local Condition = require('condition')
-local Query = require('query')
-
 local Store = declareType('Store')
+
+local Block = require('block')
+local Condition = require('condition')
+local Stack = require('stack')
+
+local EMPTY = {}
 
 
 ---
@@ -20,15 +21,19 @@ local Store = declareType('Store')
 ---
 
 function Store.new()
-	local store = instantiateType(Store, {
-		_conditions = {},
-		_currentCondition = nil,
-		_blocks = {},
-		_currentBlock = nil
+	return instantiateType(Store, {
+		_conditions = Stack.new({ Condition.new(EMPTY) }),
+		_blocks = {}
 	})
+end
 
-	Store.pushCondition(store, {})
-	return store
+
+---
+-- Return the list of configuration blocks contained by the store.
+---
+
+function Store.blocks(self)
+	return self._blocks
 end
 
 
@@ -41,17 +46,17 @@ end
 ---
 
 function Store.pushCondition(self, clauses)
+	local conditions = self._conditions
+
 	local condition = Condition.new(clauses)
 
-	local conditions = self._conditions
-	if #conditions > 0 then
-		local outerCondition = conditions[#conditions]
+	local outerCondition = Stack.top(conditions)
+	if outerCondition ~= nil then
 		condition = Condition.merge(outerCondition, condition)
 	end
 
-	table.insert(conditions, condition)
-	self._currentCondition = condition
-	self._currentBlock = nil
+	Stack.push(conditions, condition)
+	Store._newBlock(self, Block.ADD)
 
 	return self
 end
@@ -62,66 +67,55 @@ end
 ---
 
 function Store.popCondition(self)
-	local conditions = self._conditions
-	table.remove(conditions)
-
-	self._currentCondition = conditions[#conditions]
-	self._currentBlock = nil
-
+	Stack.pop(self._conditions)
 	return self
 end
 
 
 ---
--- Start a store query. Given a table describing the current execution
--- environment (system, current action, options, etc.) returns a Query
--- representing the "global" scope.
---
--- @param env
---    The query environment. A collection of key-value pairs representing
---    the current execution environment.
--- @returns
---    A Query object encapsulating the global configuration scope for the
---    provided execution environment.
----
-
-function Store.query(self, env)
-	return Query.new(self._blocks, env)
-end
-
-
----
--- Adds a value or values to the currently active configuration.
+-- Adds a value or values to the current configuration.
 ---
 
 function Store.addValue(self, fieldName, value)
-	Store._applyValueOperation(self, Query.ADD, fieldName, value)
+	Store._applyValueOperation(self, Block.ADD, fieldName, value)
 	return self
 end
 
 
 ---
--- Flags one or more configured values for removal from the currently
--- active configuration.
+-- Flags one or more values for removal from the current configuration.
 ---
 
 function Store.removeValue(self, fieldName, value)
-	Store._applyValueOperation(self, Query.REMOVE, fieldName, value)
+	Store._applyValueOperation(self, Block.REMOVE, fieldName, value)
 	return self
 end
 
 
-function Store._applyValueOperation(self, operation, fieldName, value)
-	local block = self._currentBlock
+---
+-- Store values to be added or removed from a configuration, creating a new block if needed.
+---
 
-	if block == nil or block._operation ~= operation then
-		block = Query.newStorageBlock(operation, self._currentCondition)
-		table.insert(self._blocks, block)
-		self._currentBlock = block
+function Store._applyValueOperation(self, operation, fieldName, value)
+	local block = table.last(self._blocks)
+
+	if not Block.acceptsOperation(block, operation) then
+		block = Store._newBlock(self, operation)
 	end
 
-	local field = Field.get(fieldName)
-	block[fieldName] = Field.mergeValues(field, block[fieldName], value)
+	Block.store(block, fieldName, value)
+end
+
+
+---
+-- Add a new block to the block list and return it.
+---
+
+function Store._newBlock(self, operation)
+	local condition = Stack.top(self._conditions)
+	local block = Block.new(operation, condition, _SCRIPT_DIR)
+	table.insert(self._blocks, block)
+	return block
 end
 
 

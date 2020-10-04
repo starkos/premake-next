@@ -70,7 +70,7 @@ end
 ---
 
 function instantiateType(type, initialValues)
-	return setmetatable(initialValues, type)
+	return setmetatable(initialValues or {}, type)
 end
 
 
