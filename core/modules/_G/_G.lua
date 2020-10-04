@@ -2,14 +2,16 @@
 -- Extensions to Lua's global functions.
 ---
 
-local p = _PREMAKE.premake
 local path = _PREMAKE.path
+local premake = _PREMAKE.premake
+
+local Callback = require('callback')
 
 package.registered = {}
 
-local m = {}
+local _onRequireCallbacks = {}
 
-m._onRequireCallbacks = {}
+local EMPTY = {}
 
 
 local function _typeIndexer(self, key)
@@ -66,14 +68,9 @@ end
 
 
 function onRequire(moduleName, fn)
-	local callbacks = m._onRequireCallbacks[moduleName] or {}
-
-	table.insert(callbacks, {
-		fn = fn,
-		_SCRIPT_DIR = _SCRIPT_DIR
-	})
-
-	m._onRequireCallbacks[moduleName] = callbacks
+	local callbacks = _onRequireCallbacks[moduleName] or {}
+	table.insert(callbacks, Callback.new(fn))
+	_onRequireCallbacks[moduleName] = callbacks
 end
 
 
@@ -95,10 +92,9 @@ local _builtInRequire = require
 function require(moduleName)
 	local module = _builtInRequire(moduleName)
 
-	local callbacks = m._onRequireCallbacks[moduleName] or {}
+	local callbacks = _onRequireCallbacks[moduleName] or EMPTY
 	for i = 1, #callbacks do
-		local callback = callbacks[i]
-		callback.fn(module)
+		Callback.call(callbacks[i], module)
 	end
 
 	return module
@@ -110,7 +106,7 @@ function tryRegister(module)
 		return true
 	end
 
-	local location = p.locateModule(module)
+	local location = premake.locateModule(module)
 	if not location then
 		return false, string.format('Module `%s` not found', module)
 	end
@@ -135,4 +131,4 @@ function typeOf(instance)
 end
 
 
-return m
+return _G

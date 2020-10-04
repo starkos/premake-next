@@ -76,3 +76,6 @@ function os._match(results, mask, type)
 		end
 	end
 end
+
+
+return os

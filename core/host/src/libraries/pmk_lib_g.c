@@ -43,16 +43,23 @@ int g_forceRequire(lua_State* L)
 {
 	char buffer[PATH_MAX];
 
-	const char* module = luaL_checkstring(L, 1);
+	const char* moduleName = luaL_checkstring(L, 1);
 
-	const char* locatedAt = pmk_locateModule(buffer, L, module);
+	const char* locatedAt = pmk_locateModule(buffer, L, moduleName);
 	if (!locatedAt) {
-		lua_pushfstring(L, "no such module `%s`", module);
+		lua_pushfstring(L, "no such module `%s`", moduleName);
 		lua_error(L);
 	}
 
 	pmk_doFile(L, locatedAt);
-	return (0);
+
+	/* Add the just loaded module to Lua's "loaded" table */
+	luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+    lua_pushvalue(L, -2);
+    lua_setfield(L, -2, moduleName);
+	lua_pop(L, 1);
+
+	return (1);
 }
 
 

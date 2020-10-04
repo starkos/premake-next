@@ -175,3 +175,6 @@ function table.toString(self)
 
 	return formatTable(self)
 end
+
+
+return table

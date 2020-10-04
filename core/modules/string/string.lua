@@ -40,3 +40,6 @@ function string.split(self, pattern, plain, limit)
 	table.insert(result, string.sub(self, pos))
 	return result
 end
+
+
+return string

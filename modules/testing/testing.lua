@@ -2,12 +2,13 @@
 -- A unit testing framework for Premake/Lua.
 ---
 
+local Callback = require('callback')
 local options = require('options')
-local p = require('premake')
 local path = require('path')
+local premake = require('premake')
 local terminal = require('terminal')
 
-local m = {}
+local testing = {}
 
 local _allowedTestPatterns = {}
 local _suites = {}
@@ -65,11 +66,11 @@ local function _failureHandler(err)
 end
 
 
-function m.runTests()
+function testing.runTests()
 	_isVerbose = options.isSet('--verbose')
 
-	m.loadAllTests()
-	m.parseAllowedTestPatterns()
+	testing.loadAllTests()
+	testing.parseAllowedTestPatterns()
 
 	local totalSuites = 0
 	local totalTests = 0
@@ -78,11 +79,11 @@ function m.runTests()
 	local failedTests = {}
 
 	for suiteName in pairs(_suites) do
-		local tests = m.collectTestsForSuite(suiteName)
+		local tests = testing.collectTestsForSuite(suiteName)
 		if #tests > 0 then
-		   local passed, failed = m.runTestSuite(suiteName, tests, failedTests)
-		   totalSuites = totalSuites + 1
-		   totalTests = totalTests + #tests
+			local passed, failed = testing.runTestSuite(suiteName, tests, failedTests)
+			totalSuites = totalSuites + 1
+			totalTests = totalTests + #tests
 		end
 	end
 
@@ -108,7 +109,7 @@ function m.runTests()
 end
 
 
-function m.loadAllTests()
+function testing.loadAllTests()
 	local suites = table.joinArrays(
 		os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', '*_tests.lua')),
 		os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', 'test_*.lua'))
@@ -120,7 +121,7 @@ function m.loadAllTests()
 end
 
 
-function m.parseAllowedTestPatterns()
+function testing.parseAllowedTestPatterns()
 	_allowedTestPatterns = {}
 
 	local testOnly = options.valueOf('--test-only')
@@ -143,15 +144,15 @@ function m.parseAllowedTestPatterns()
 end
 
 
-function m.collectTestsForSuite(suiteName)
+function testing.collectTestsForSuite(suiteName)
 	local tests = {}
 
 	local suite = _suites[suiteName]
 	for testName in pairs(suite) do
-		if m.isValidTest(suiteName, testName) then
+		if testing.isValidTest(suiteName, testName) then
 			local aliases = suite._aliases
 			for i = 1, #aliases do
-				if m.isAllowedTest(aliases[i], testName) then
+				if testing.isAllowedTest(aliases[i], testName) then
 					table.insert(tests, testName)
 					break
 				end
@@ -163,7 +164,7 @@ function m.collectTestsForSuite(suiteName)
 end
 
 
-function m.runTestSuite(suiteName, testNames, failedTests)
+function testing.runTestSuite(suiteName, testNames, failedTests)
 	local totalPassed = 0
 	local totalFailed = 0
 	local startTime = os.clock()
@@ -171,7 +172,7 @@ function m.runTestSuite(suiteName, testNames, failedTests)
 	_logVerbose(GREEN, '[----------]', ' %d tests from %s', #testNames, suiteName)
 
 	for i = 1, #testNames do
-		if m.runIndividualTest(suiteName, testNames[i]) then
+		if testing.runIndividualTest(suiteName, testNames[i]) then
 			totalPassed = totalPassed + 1
 		else
 			totalFailed = totalFailed + 1
@@ -187,22 +188,20 @@ function m.runTestSuite(suiteName, testNames, failedTests)
 end
 
 
-function m.runIndividualTest(suiteName, testName)
+function testing.runIndividualTest(suiteName, testName)
 	_logVerbose(GREEN, '[ RUN      ]', ' %s.%s', suiteName, testName)
 	local startTime = os.clock()
 
-	local suite = _suites[suiteName]
-	_SCRIPT_DIR = suite._SCRIPT_DIR
-
-	local ok, err = m.runSuiteSetup(suiteName)
+	local ok, err = testing.runSuiteSetup(suiteName)
 
 	if ok then
-		p.capture(function()
-			ok, err = xpcall(suite[testName], _failureHandler)
+		premake.capture(function()
+			local suite = _suites[suiteName]
+			ok, err = xpcall(suite._runner, _failureHandler, suite[testName])
 		end)
 	end
 
-	local teardownOk, teardownErr = m.runSuiteTeardown(suiteName)
+	local teardownOk, teardownErr = testing.runSuiteTeardown(suiteName)
 
 	ok = ok and teardownOk
 	err = err or teardownErr
@@ -227,47 +226,60 @@ function m.runIndividualTest(suiteName, testName)
 end
 
 
-function m.runSuiteSetup(suiteName)
+function testing._testRunner(suiteName, testName)
+	local ok, err = testing.runSuiteSetup(suiteName)
+
+	if ok then
+		local suite = _suites[suiteName]
+		premake.capture(function()
+			ok, err = xpcall(suite[testName], _failureHandler)
+		end)
+	end
+
+	local teardownOk, teardownErr = testing.runSuiteTeardown(suiteName)
+
+	ok = ok and teardownOk
+	err = err or teardownErr
+
+	return ok, err
+end
+
+
+function testing.runSuiteSetup(suiteName)
 	for i = 1, #_onBeforeTestCallbacks do
-		local callback = _onBeforeTestCallbacks[i]
-		-- _SCRIPT_DIR = callback._SCRIPT_DIR
-		callback()
+		_onBeforeTestCallbacks[i]()
 	end
 
 	local suite = _suites[suiteName]
-	_SCRIPT_DIR = suite._SCRIPT_DIR
 
 	if type(suite.setup) == 'function' then
-		return xpcall(suite.setup, _failureHandler)
+		return xpcall(suite._runner, _failureHandler, suite.setup)
 	else
 		return true
 	end
 end
 
 
-function m.runSuiteTeardown(suiteName)
+function testing.runSuiteTeardown(suiteName)
 	local ok, err
 
 	local suite = _suites[suiteName]
-	_SCRIPT_DIR = suite._SCRIPT_DIR
 
 	if type(suite.teardown) == 'function' then
-		ok, err = xpcall(suite.teardown, _failureHandler)
+		ok, err = xpcall(suite._runner, _failureHandler, suite.teardown)
 	else
 		ok = true
 	end
 
 	for i = #_onAfterTestCallbacks, 1, -1 do
-		local callback = _onAfterTestCallbacks[i]
-		-- _SCRIPT_DIR = callbacks._SCRIPT_DIR
-		callback()
+		_onAfterTestCallbacks[i]()
 	end
 
 	return ok, err
 end
 
 
-function m.declare(suiteName, ...)
+function testing.declare(suiteName, ...)
 	if _suites[suiteName] then
 		error(string.format('Duplicate test suite `%s`', suiteName), 2)
 	end
@@ -292,14 +304,17 @@ function m.declare(suiteName, ...)
 	})
 
 	suite._aliases = table.joinArrays(suiteName, suiteName .. 'Tests', ...)
-	suite._SCRIPT_DIR = _SCRIPT_DIR
+	-- restore script vars state before running test functions
+	suite._runner = Callback.new(function(fn)
+		fn()
+	end)
 
 	_suites[suiteName] = suite
 	return suite
 end
 
 
-function m.isAllowedTest(suiteName, testName)
+function testing.isAllowedTest(suiteName, testName)
 	local fullTestName = string.lower(string.format('%s.%s', suiteName, testName))
 
 	for i = 1, #_allowedTestPatterns do
@@ -313,23 +328,23 @@ function m.isAllowedTest(suiteName, testName)
 end
 
 
-function m.isValidTest(suiteName, testName)
+function testing.isValidTest(suiteName, testName)
 	local test = _suites[suiteName][testName]
 	return type(test) == 'function' and testName ~= 'setup' and testName ~= 'teardown'
 end
 
 
-function m.onBeforeTest(fn)
-	table.insert(_onBeforeTestCallbacks, fn)
+function testing.onBeforeTest(fn)
+	table.insert(_onBeforeTestCallbacks, Callback.new(fn))
 end
 
 
-function m.onAfterTest(fn)
-	table.insert(_onAfterTestCallbacks, fn)
+function testing.onAfterTest(fn)
+	table.insert(_onAfterTestCallbacks, Callback.new(fn))
 end
 
 
-doFile('assertions.lua', m)
-doFile('stubs.lua', m)
+doFile('assertions.lua', testing)
+doFile('stubs.lua', testing)
 
-return m
+return testing
