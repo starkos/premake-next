@@ -7,9 +7,7 @@ local path = _PREMAKE.path
 
 package.registered = {}
 
-local m = {}
-
-m._onRequireCallbacks = {}
+local _onRequireCallbacks = {}
 
 
 local function _typeIndexer(self, key)
@@ -66,14 +64,14 @@ end
 
 
 function onRequire(moduleName, fn)
-	local callbacks = m._onRequireCallbacks[moduleName] or {}
+	local callbacks =_onRequireCallbacks[moduleName] or {}
 
 	table.insert(callbacks, {
 		fn = fn,
 		_SCRIPT_DIR = _SCRIPT_DIR
 	})
 
-	m._onRequireCallbacks[moduleName] = callbacks
+	_onRequireCallbacks[moduleName] = callbacks
 end
 
 
@@ -95,7 +93,7 @@ local _builtInRequire = require
 function require(moduleName)
 	local module = _builtInRequire(moduleName)
 
-	local callbacks = m._onRequireCallbacks[moduleName] or {}
+	local callbacks = _onRequireCallbacks[moduleName] or {}
 	for i = 1, #callbacks do
 		local callback = callbacks[i]
 		callback.fn(module)
@@ -135,4 +133,4 @@ function typeOf(instance)
 end
 
 
-return m
+return _G
