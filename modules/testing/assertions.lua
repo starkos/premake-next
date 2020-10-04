@@ -2,10 +2,10 @@
 -- Unit testing framework assertion library
 ---
 
-local m = select(1, ...)
+local testing = select(1, ...)
 
 
-function m.fail(format, ...)
+function testing.fail(format, ...)
 	local args = { ... }
 	local depth = 3
 
@@ -29,15 +29,15 @@ function m.fail(format, ...)
 end
 
 
-function m.isEqual(expected, actual, depth)
+function testing.isEqual(expected, actual, depth)
 	local function test(expected, actual, depth)
 		if type(expected) == 'table' then
 			if expected and not actual then
-				m.fail(depth, 'expected table, got nil')
+				testing.fail(depth, 'expected table, got nil')
 			end
 
 			if #expected < #actual then
-				m.fail(depth, 'expected %d items, got %d', #expected, #actual)
+				testing.fail(depth, 'expected %d items, got %d', #expected, #actual)
 			end
 
 			for k, v in pairs(expected) do
@@ -45,7 +45,7 @@ function m.isEqual(expected, actual, depth)
 			end
 		else
 			if expected ~= actual then
-				m.fail(depth, 'expected `%s` but was `%s`', expected, actual or 'nil')
+				testing.fail(depth, 'expected `%s` but was `%s`', expected, actual or 'nil')
 			end
 		end
 	end
@@ -55,29 +55,29 @@ function m.isEqual(expected, actual, depth)
 end
 
 
-function m.isFalse(actual)
+function testing.isFalse(actual)
 	if actual then
-		m.fail('expected false but was true')
+		testing.fail('expected false but was true')
 	end
 end
 
 
-function m.isNil(actual)
+function testing.isNil(actual)
 	if actual ~= nil then
-		m.fail('expected nil but was `%s`', tostring(actual))
+		testing.fail('expected nil but was `%s`', tostring(actual))
 	end
 end
 
 
-function m.isNotNil(actual)
+function testing.isNotNil(actual)
 	if actual == nil then
-		m.fail('expected non-nil but was `%s`', tostring(actual))
+		testing.fail('expected non-nil but was `%s`', tostring(actual))
 	end
 end
 
 
-function m.isTrue(actual)
+function testing.isTrue(actual)
 	if not actual then
-		m.fail('expected true but was false')
+		testing.fail('expected true but was false')
 	end
 end
