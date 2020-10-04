@@ -1,6 +1,6 @@
 local os = require('os')
 
-local OsTests = test.declare('OsTests')
+local OsTests = test.declare('os')
 
 local _cwd
 

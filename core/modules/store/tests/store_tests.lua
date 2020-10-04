@@ -1,6 +1,6 @@
 local Store = require('store')
 
-local StoreTests = test.declare('StoreTests')
+local StoreTests = test.declare('store')
 
 local store
 

@@ -146,9 +146,16 @@ end
 function m.collectTestsForSuite(suiteName)
 	local tests = {}
 
-	for testName in pairs(_suites[suiteName]) do
-		if m.isValidTest(suiteName, testName) and m.isAllowedTest(suiteName, testName) then
-			table.insert(tests, testName)
+	local suite = _suites[suiteName]
+	for testName in pairs(suite) do
+		if m.isValidTest(suiteName, testName) then
+			local aliases = suite._aliases
+			for i = 1, #aliases do
+				if m.isAllowedTest(aliases[i], testName) then
+					table.insert(tests, testName)
+					break
+				end
+			end
 		end
 	end
 
@@ -260,7 +267,7 @@ function m.runSuiteTeardown(suiteName)
 end
 
 
-function m.declare(suiteName)
+function m.declare(suiteName, ...)
 	if _suites[suiteName] then
 		error(string.format('Duplicate test suite `%s`', suiteName), 2)
 	end
@@ -284,6 +291,7 @@ function m.declare(suiteName)
 		end
 	})
 
+	suite._aliases = table.joinArrays(suiteName, suiteName .. 'Tests', ...)
 	suite._SCRIPT_DIR = _SCRIPT_DIR
 
 	_suites[suiteName] = suite
@@ -292,10 +300,11 @@ end
 
 
 function m.isAllowedTest(suiteName, testName)
-	local fullTestName = string.format('%s.%s', suiteName, testName)
+	local fullTestName = string.lower(string.format('%s.%s', suiteName, testName))
 
 	for i = 1, #_allowedTestPatterns do
-		if string.match(fullTestName, _allowedTestPatterns[i]) == fullTestName then
+		local pattern = string.lower(_allowedTestPatterns[i])
+		if string.match(fullTestName, pattern) == fullTestName then
 			return true
 		end
 	end

@@ -1,6 +1,6 @@
 local path = require('path')
 
-local PathTests = test.declare('PathTests')
+local PathTests = test.declare('path')
 
 -- path.join() --
 

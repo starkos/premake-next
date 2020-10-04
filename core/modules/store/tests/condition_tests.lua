@@ -1,6 +1,6 @@
 local Condition = require('../condition')
 
-local ConditionTests = test.declare('ConditionTests')
+local ConditionTests = test.declare('condition')
 
 
 ---

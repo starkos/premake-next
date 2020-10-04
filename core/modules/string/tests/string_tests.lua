@@ -1,4 +1,4 @@
-local StringTests = test.declare('StringTests')
+local StringTests = test.declare('string')
 
 -- string.contains() --
 
