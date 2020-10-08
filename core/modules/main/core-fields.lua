@@ -27,6 +27,11 @@ Field.new({
 })
 
 Field.new({
+	name = 'filename',
+	kind = 'string'
+})
+
+Field.new({
 	name = 'kind',
 	kind = 'string',
 	allowed = {
@@ -35,6 +40,12 @@ Field.new({
 		'StaticLibrary',
 		'WindowedApplication'
 	}
+})
+
+
+Field.new({
+	name = 'location',
+	kind = 'path'
 })
 
 Field.new({

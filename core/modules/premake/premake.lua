@@ -3,15 +3,19 @@
 ---
 
 local buffer = require('buffer')
+local Store = require('store')
 
-local m = _PREMAKE.premake
+local premake = _PREMAKE.premake
 
 _PREMAKE.VERSION = '6.0.0-next'
 _PREMAKE.COPYRIGHT = 'Copyright (C) 2002-2020 Jason Perkins and the Premake Project'
 _PREMAKE.WEBSITE = 'https://github.com/starkos/premake-next'
 
+local _env = {}
+local _store = Store.new()
 
-function m.callArray(funcs, ...)
+
+function premake.callArray(funcs, ...)
 	if type(funcs) == 'function' then
 		funcs = funcs(...)
 	end
@@ -25,7 +29,7 @@ end
 
 local _captured
 
-function m.capture(fn)
+function premake.capture(fn)
 	local previousCapture = _captured
 
 	_captured = buffer.new()
@@ -37,7 +41,7 @@ function m.capture(fn)
 end
 
 
-function m.captured()
+function premake.captured()
 	if _captured then
 		return buffer.tostring(_captured)
 	else
@@ -46,7 +50,7 @@ function m.captured()
 end
 
 
-function m.checkRequired(obj, ...)
+function premake.checkRequired(obj, ...)
 	local n = select('#', ...)
 	for i = 1, n do
 		local field = select(i, ...)
@@ -58,12 +62,27 @@ function m.checkRequired(obj, ...)
 end
 
 
+function premake.env()
+	return _env
+end
+
+
 local _eol
 
-function m.eol(newValue)
+function premake.eol(newValue)
 	_eol = newValue or _eol
 	return _eol
 end
 
 
-return m
+function premake.export(obj, exportPath, exporter)
+	exporter(obj)
+end
+
+
+function premake.store()
+	return _store
+end
+
+
+return premake

@@ -12,6 +12,9 @@ local State = declareType('State')
 
 local Query = doFile('./src/query.lua')
 
+State.INHERIT = 'inherit'
+State.NO_INHERIT = 'no-inherit'
+
 local EMPTY = {}
 
 
@@ -20,15 +23,6 @@ State.__index = function(self, key)
 	return State[key] or State.get(self, key)
 end
 
-
--- local function _new(query, env, isInheriting)
--- 	return instantiateType(State, {
--- 		_query = query,
--- 		_env = env,
--- 		_isInheriting = isInheriting,
--- 		_blocks = EMPTY
--- 	})
--- end
 
 local function _new(values)
 	local newState = instantiateType(State, values)
@@ -51,31 +45,6 @@ function State.new(store, env)
 		_query = Query.new(Store.blocks(store)),
 		_env = env or EMPTY
 	})
-end
-
-
----
--- Locates and returns the `Block` instance where a specific value was set.
----
-
-function State.blockWhereSet(self, fieldName, value)
-	local field = Field.get(fieldName)
-	local result = Field.defaultValue(field)
-
-	local blocks = self._blocks
-	for i = 1, #blocks do
-		local block = blocks[i]
-		local blockValue = block[fieldName]
-
-		if blockValue and Block.operation(block) == Block.ADD then
-			result = Field.mergeValues(field, result, blockValue)
-			if Field.contains(field, result, value, true) then
-				return block
-			end
-		end
-	end
-
-	return nil
 end
 
 
@@ -156,17 +125,24 @@ end
 --
 -- @param scope
 --    Key-value pair(s) representing the new scope, ex. `{ project = 'Project1' }`.
--- @param extraEnv
---    An option table of additional key-value pairs to add to the query environment.
+-- @param inherit
+--    One of `State.INHERIT` or `State.NO_INHERIT`. Controls whether values should be inherited from
+--    the source state.
 -- @returns
 --    A new State instance representing the inner scope.
 ---
 
-function State.select(self, scope, extraEnv)
-	return _new({
+function State.select(self, scope, inherit)
+	local newState = _new({
 		_query = Query.select(self._query, scope),
-		_env = table.mergeKeys(self._env, scope, extraEnv or EMPTY)
+		_env = table.mergeKeys(self._env, scope)
 	})
+
+	if inherit == State.INHERIT then
+		newState = State.withInheritance(newState)
+	end
+
+	return newState
 end
 
 

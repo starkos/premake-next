@@ -88,8 +88,10 @@ function table.mergeKeys(...)
 	local n = select('#', ...)
 	for i = 1, n do
 		local arg = select(i, ...)
-		for key, value in pairs(arg) do
-			result[key] = value
+		if arg ~= nil then
+			for key, value in pairs(arg) do
+				result[key] = value
+			end
 		end
 	end
 
