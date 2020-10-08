@@ -51,13 +51,13 @@ function options.all()
 				local def = options.definitionOf(trigger)
 				if def and def.value then
 					i = i + 1
-					value = _ARGS[i]
+					value = _ARGS[i] or def.default
 				else
 					value = _ARGS[i + 1]
 				end
 			end
 
-			return trigger, value or ""
+			return trigger, value
 		end
 	end
 end

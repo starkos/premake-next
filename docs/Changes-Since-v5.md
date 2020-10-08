@@ -1,10 +1,28 @@
 # Changes since Premake5
 
+My best attempt to keep track of all the notable changes between this version and the latest and greatest v5. If you spot anything I missed, open an issue to let me know!
+
 ## The Big Stuff
 
+#### Exporters now default to latest version
+
+Tool vendors are moving to more "fluid" releases, and significant changes are no longer limited to major releases. The expectation is that most developers will stay up-to-date with the most recent version (whether they like it or not!). In this new world, Premake's one-exporter-per-major-version approach isn't holding up. Instead, exporters now register a single action per toolset with an optional argument to specify the version. If not specified, the most recent version is targeted.
+
+```sh
+# Target the latest version
+$ premake6 vstudio
+$ premake6 xcode
+
+# Target a specific version
+$ premake vstudio=2017
+$ premake6 xcode=9
+
+# Opens possibility of targeting incremental releases
+$ premake vstudio=14.0.25431.01
+```
 #### Names are now Camel Case
 
-All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/Camel_case), ex. `string.startswith()` is now `string.startsWith()`. This includes Lua's built-in functions as well, ex. `doFile()` and `loadFile()`. (In previous versions I tried to match Lua's `alllowercase` standard but it only resulted in unreadable code. This isn't assembly language.)
+All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/Camel_case), ex. `string.startswith()` is now `string.startsWith()`. This includes Lua's built-in functions as well, ex. `doFile()` and `loadFile()`. In previous versions I tried to match Lua's `alllowercasenoseparators` standard but it only resulted in unreadable code.
 
 #### No longer modifies the current working directory
 
@@ -13,13 +31,13 @@ Previous versions would set the working directory to the location of the last lo
 
 ## Smaller improvements
 
-- **No longer modifies the Lua runtime.** This opens up the possibility of linking Premake against the system's Lua library, enabling it to interoperate with third-party Lua binary modules.
+- **No longer modifies the Lua runtime.** You can now choose to link Premake against the system's Lua library in order to interoperate with third-party binary Lua modules.
 
 - **System script runs earlier.** The system script is now run earlier in the bootstrap process, enabling third-party modules more opportunities to modify that process.
 
-- **Improved command line option model and parsing.** The distinction between "options" and "actions" has been removed. All options may now specify an `execute()` method. The "=" is now optional when assigning values from the command line. The `_OPTIONS` global has been removed; use the `options` module for direct programmatic access.
+- **Improved command line option model and parsing.** The distinction between "options" and "actions" has been removed. All arguments may now specify an `execute()` method. The "=" is now optional when assigning values from the command line. The `_OPTIONS` global has been removed; use the `options` module for direct programmatic access.
 
-- **Preload magic replaced with `register()`.** Previously only core modules could register command line options and other settings on startup without actually loading the entire module. Modules may now include a `register.lua` script which can be loaded with `register('moduleName')`. See [the testing module](../modules/testing) for an example.
+- **Preload magic replaced with `register()`.** Previously only core modules could register command line options and other settings on startup without actually loading the entire module. Any modules may now include a `register.lua` script which can be loaded with `register('moduleName')`. See [the testing module](../modules/testing) for an example.
 
 
 ## API Changes

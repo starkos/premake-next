@@ -205,7 +205,8 @@ function StateTests.withInheritance_includesImmediateBroaderScope_onTopLevelScop
 
 	local project = State.new(store)
 		:select({ workspaces = 'Workspace1' }) -- does not inherit
-		:select({ projects = 'Project1' }):withInheritance()
+		:select({ projects = 'Project1' })
+		:withInheritance()
 
 	test.isEqual({ 'WORKSPACE', 'PROJECT' }, project:get('defines'))
 end
@@ -223,7 +224,8 @@ function StateTests.withInheritance_includesImmediateBroaderScope_onNestedScopes
 
 	local project = State.new(store)
 		:select({ workspaces = 'Workspace1' }) -- does not inherit
-		:select({ projects = 'Project1' }):withInheritance()
+		:select({ projects = 'Project1' })
+		:withInheritance()
 
 	test.isEqual({ 'WORKSPACE', 'PROJECT' }, project:get('defines'))
 end
@@ -246,8 +248,10 @@ function StateTests.withInheritance_includesValuesInheritedByBroaderScope()
 		:addValue('defines', 'PROJECT')
 
 	local project = State.new(store)
-		:select({ workspaces = 'Workspace1' }):withInheritance()
-		:select({ projects = 'Project1' }):withInheritance()
+		:select({ workspaces = 'Workspace1' })
+		:withInheritance()
+		:select({ projects = 'Project1' })
+		:withInheritance()
 
 	test.isEqual({ 'GLOBAL', 'WORKSPACE', 'PROJECT' }, project:get('defines'))
 end
@@ -347,7 +351,8 @@ function StateTests.remove_byProject_appearsInOtherProjects()
 
 	local project2 = State.new(store)
 		:select({ workspaces = 'Workspace1'})
-		:select({ projects = 'Project2 '}):withInheritance()
+		:select({ projects = 'Project2 '})
+		:withInheritance()
 
 	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, project2:get('defines'))
 end
@@ -400,7 +405,8 @@ function StateTests.remove_fromConfig_byProject()
 
 	local debugCfg = State.new(store)
 		:select({ workspaces = 'Workspace1'})
-		:select({ configurations = 'Debug'}):withInheritance()
+		:select({ configurations = 'Debug'})
+		:withInheritance()
 
 	test.isEqual({ 'DEBUG1', 'DEBUG3' }, debugCfg:get('defines'))
 end
@@ -467,8 +473,10 @@ function StateTests.remove_byProjectConfig_appearsInOtherConfigs()
 
 	local releaseCfg = State.new(store)
 		:select({ workspaces = 'Workspace1' })
-		:select({ projects = 'Project1' }):withInheritance()
-		:select({ configurations = 'Release' }):withInheritance()
+		:select({ projects = 'Project1' })
+		:withInheritance()
+		:select({ configurations = 'Release' })
+		:withInheritance()
 
 	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, releaseCfg:get('defines'))
 end
@@ -510,7 +518,8 @@ function StateTests.remove_byProjectConfig_appearsInOtherConfigs_mixedInheritanc
 	local releaseCfg = State.new(store)
 		:select({ workspaces = 'Workspace1' })
 		:select({ projects = 'Project1' })
-		:select({ configurations = 'Release' }):withInheritance()
+		:select({ configurations = 'Release' })
+		:withInheritance()
 
 	test.isEqual({ 'VALUE2' }, releaseCfg:get('defines'))
 end
@@ -534,7 +543,8 @@ function StateTests.canEvaluateBlocksOutOfOrder()
 		:popCondition()
 
 	local project = State.new(store)
-		:select({ projects = 'Project1' }):withInheritance()
+		:select({ projects = 'Project1' })
+		:withInheritance()
 
 	test.isEqual({ 'STATIC', 'PROJECT' }, project:get('defines'))
 end

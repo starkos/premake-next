@@ -16,7 +16,7 @@ m.SYSTEM_SCRIPT_NAME = 'premake6-system.lua'
 
 doFile('./core-fields.lua')
 doFile('./core-options.lua', m)
-
+doFile('./core-modules.lua')
 
 -- Bootstrapping functions, in execution order
 
@@ -60,6 +60,7 @@ end
 function m.executeCommandLineOptions()
 	if #_ARGS > 0 then
 		for trigger, value in options.each() do
+			_G._ACTION = trigger
 			options.execute(trigger, value)
 		end
 	else
