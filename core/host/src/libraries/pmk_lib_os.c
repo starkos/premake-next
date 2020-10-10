@@ -83,3 +83,18 @@ int pmk_os_matchStart(lua_State* L)
 	lua_pushlightuserdata(L, matcher);
 	return (1);
 }
+
+
+int pmk_os_mkdir(lua_State* L)
+{
+	const char* path = luaL_checkstring(L, 1);
+
+	if (pmk_mkdir(path) != OKAY) {
+		lua_pushnil(L);
+		lua_pushfstring(L, "unable to create directory '%s'", path);
+		return (2);
+	}
+
+	lua_pushboolean(L, TRUE);
+	return (1);
+}

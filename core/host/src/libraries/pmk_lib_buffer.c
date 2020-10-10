@@ -43,7 +43,7 @@ int pmk_buffer_writeln(lua_State* L)
 
 int pmk_buffer_close(lua_State* L)
 {
-	pmk_buffer_tostring(L);
+	pmk_buffer_toString(L);
 
 	pmk_Buffer* b = (pmk_Buffer*)lua_touserdata(L, 1);
 	pmk_bufferClose(b);
@@ -51,7 +51,7 @@ int pmk_buffer_close(lua_State* L)
 }
 
 
-int pmk_buffer_tostring(lua_State* L)
+int pmk_buffer_toString(lua_State* L)
 {
 	pmk_Buffer* b = (pmk_Buffer*)lua_touserdata(L, 1);
 

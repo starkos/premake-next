@@ -51,7 +51,8 @@ int g_forceRequire(lua_State* L)
 		lua_error(L);
 	}
 
-	pmk_doFile(L, locatedAt);
+	if (pmk_doFile(L, locatedAt) != LUA_OK)
+		lua_error(L);
 
 	/* Add the just loaded module to Lua's "loaded" table */
 	luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);

@@ -5,16 +5,9 @@
 local testing = select(1, ...)
 
 
-local function stub()
-end
-
-
 testing.onBeforeTest(function()
-	test.print = print
-	print = stub
 end)
 
 
 testing.onAfterTest(function()
-	print = test.print
 end)

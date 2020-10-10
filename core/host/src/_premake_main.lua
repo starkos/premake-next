@@ -6,6 +6,7 @@ forceRequire('_G')
 forceRequire('string')
 forceRequire('table')
 forceRequire('os')
+forceRequire('io')
 
 local main = require('main')
 

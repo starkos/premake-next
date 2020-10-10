@@ -28,10 +28,16 @@ All symbols have been standardized on [camelCase](https://en.wikipedia.org/wiki/
 
 Previous versions would set the working directory to the location of the last loaded script file. The current working directory is now left intact; use `__SCRIPT_DIR` to create script relative paths at runtime.
 
+#### Documentation has moved
+
+Documentation is now stored in a `docs/` folder in the main repository. This allows it to be authored alongside the code, and reviewed and approved as part of the normal pull request process.
+
 
 ## Smaller improvements
 
 - **No longer modifies the Lua runtime.** You can now choose to link Premake against the system's Lua library in order to interoperate with third-party binary Lua modules.
+
+- **Less global namespace clutter.** In particular, the `premake` and `path` globals are gone; you'll now need to `local premake = require('premake')` and `local path = require('path')` instead.
 
 - **System script runs earlier.** The system script is now run earlier in the bootstrap process, enabling third-party modules more opportunities to modify that process.
 
@@ -40,38 +46,53 @@ Previous versions would set the working directory to the location of the last lo
 - **Preload magic replaced with `register()`.** Previously only core modules could register command line options and other settings on startup without actually loading the entire module. Any modules may now include a `register.lua` script which can be loaded with `register('moduleName')`. See [the testing module](../modules/testing) for an example.
 
 
+## Under the Hood Changes
+
+- The way in which project settings are stored and queries has been entirely rewritten to improve flexibility and enable new features; see [this community update](https://opencollective.com/premake/updates/community-update-5) for more information
+
+- The division of responsibilities has been shifted to give exporters significantly more control over how data is queried, inherited, and exported
+
+- The code has been reorganized to be more module-oriented; features are now loaded on-demand for faster startup time and lower resource usage.
+
+
 ## API Changes
 
 - As mentioned above, all APIs now use camel-case: `string.startswith` is now `string.startsWith`, etc.
 
-- The Table APIs have been reworked to distinguish between array and dictionary operations.
+#### _G
 
-- `doFile()` now accepts an optional list of arguments to pass to the called script
-
-- Most of the global state variables have been gathered under a new `_PREMAKE` global: `_PREMAKE.COMMAND`, `_PREMAKE.COMMAND_DIR`, `_PREMAKE.MAIN_SCRIPT`, `_PREMAKE.MAIN_SCRIPT_DIR`, `_PREMAKE.PATH`.
+- Most of global variables are now gathered under a new `_PREMAKE` global: `_PREMAKE.COMMAND`, `_PREMAKE.COMMAND_DIR`, `_PREMAKE.MAIN_SCRIPT`, `_PREMAKE.MAIN_SCRIPT_DIR`, `_PREMAKE.PATH`
 
 - `premake.path` (now `_PREMAKE.PATH`) is now an array of paths rather than a semicolon separated string. You may also put functions in this list, which are called at file load time to resolve the path to be searched.
 
-- `terminal.textColor()` has replaced `getTextColor` and `setTextColor`.
+- `doFile()` now accepts an optional list of arguments to pass to the called script
 
+### os
 
-## Under the Hood Changes
+- `os.writefile_ifnotequal()` has been moved to `io.writeFile()` and `io.compareFile()`
 
-- The way in which project settings are stored and queries has been entirely rewritten to improve flexibility and enable new features. See [this community update](https://opencollective.com/premake/updates/community-update-5) for more information.
+### premake
 
-- The code has been reorganized to be more module-oriented, with less global namespace clutter. In particular, the `premake` and `path` globals are gone; you'll now need to `local premake = require('premake')` and `local path = require('path')` instead. In addition to cleaning up the globals table, this means that core features and actions are now lazy-loaded on demand, rather than always loading everything up front.
+- `premake.generate()` is now `export()`, and uses a different signature
 
-- Documentation is now stored in a `docs/` folder in the main repository. This allows it to be authored alongside the code, and reviewed and approved as part of the normal pull request process.
+- `premake.workspace`, `project`, and `config` have been moved to a new `dom` module
 
-- The internal C APIs are now faster (using local buffers instead of the Lua stack) and use more consistent function signatures.
+- I/O functions (`capture`, `w`, `eol`, etc.) have been moved to the `io` library
 
+#### table
 
-## Unit Testing Module Changes
+- API reworked to distinguish between array and dictionary operations
 
-- **Name changed from `self-test` to `testing`**
+#### terminal
 
-- **Improved `--test-only` option.** Now supports the "*" wildcard and multiple, comma-separated patterns, ex. `--test-only="string,os"`
+- `terminal.textColor()` has replaced `getTextColor` and `setTextColor`
 
-- **Assertions now use camel-case.** Like all other APIs; `test.isEqual`
+#### testing
 
-- **Quieter default output.** The detailed test output is now muted by default; use the `--verbose` command line option to display.
+-  Test module name changed from `self-test` to `testing`
+
+-  `--test-only` option now supports "*" wildcards and multiple, comma-separated patterns, ex. `--test-only="string,os"`
+
+- Test output is now quieter by default; use `--verbose` flag to enable detailed out
+
+- Modules may now register pre- and post-test hooks to allow module state to be captured and restored around test boundaries
