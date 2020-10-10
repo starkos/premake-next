@@ -20,7 +20,7 @@ function Workspace.new(state, name, inherit)
 
 	wks.name = name
 	wks.filename = wks.filename or name
-	wks.location = wks.location or os.getCwd()
+	wks.location = wks.location or wks.baseDir or os.getCwd()
 
 	return instantiateType(Workspace, wks)
 end

@@ -11,8 +11,6 @@ package.registered = {}
 
 local _onRequireCallbacks = {}
 
-local EMPTY = {}
-
 
 local function _typeIndexer(self, key)
 	return self[key]
@@ -25,7 +23,7 @@ end
 ---
 
 function declareType(typeName, extends)
-	local newType = table.mergeKeys(extends or EMPTY, {
+	local newType = table.mergeKeys(extends or _EMPTY, {
 		__typeName = typeName,
 		__extends = extends
 	})
@@ -99,7 +97,7 @@ local _builtInRequire = require
 function require(moduleName)
 	local module = _builtInRequire(moduleName)
 
-	local callbacks = _onRequireCallbacks[moduleName] or EMPTY
+	local callbacks = _onRequireCallbacks[moduleName] or _EMPTY
 	for i = 1, #callbacks do
 		Callback.call(callbacks[i], module)
 	end

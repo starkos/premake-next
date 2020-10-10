@@ -5,6 +5,11 @@
 local Field = require('field')
 
 Field.new({
+	name = 'baseDir',
+	kind = 'path'
+})
+
+Field.new({
 	name = 'configurations',
 	kind = 'list:string'
 })
