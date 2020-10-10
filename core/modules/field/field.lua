@@ -4,10 +4,13 @@
 -- for a simple string value, or `list:string` for a list of strings.
 ---
 
+local Callback = require('callback')
 
 local Field = declareType('Field')
 
 local _registeredFields = {}
+local _onFieldAddedCallbacks = {}
+local _onFieldRemovedCallbacks = {}
 
 
 ---
@@ -35,56 +38,12 @@ function Field.new(definition)
 	})
 
 	_registeredFields[field.name] = field
+
+	for i = 1, #_onFieldAddedCallbacks do
+		Callback.call(_onFieldAddedCallbacks[i], field)
+	end
+
 	return field
-end
-
-
----
--- Remove a field previously registered with `new()`.
----
-
-function Field.delete(self)
-	_registeredFields[self.name] = nil
-end
-
-
----
--- Return true if a field with the given name has been registered.
----
-
-function Field.exists(fieldName)
-	return (_registeredFields[fieldName] ~= nil)
-end
-
-
----
--- Fetch a field by name.
----
-
-function Field.get(fieldName)
-	local fld = _registeredFields[fieldName]
-	if not fld then
-		error(string.format('No such field `%s`', fieldName), 2)
-	end
-	return fld
-end
-
-
----
--- Return the default (empty) value for the field.
---
--- @returns
---    For strings and other simple object types, returns `nil`. For lists and
---    other collection types, returns an empty collection.
----
-
-function Field.defaultValue(self)
-	-- just to get things doing
-	if self.kind == 'list:string' then
-		return {}
-	else
-		return nil
-	end
 end
 
 
@@ -111,6 +70,74 @@ end
 
 
 ---
+-- Return the default (empty) value for the field.
+--
+-- @returns
+--    For strings and other simple object types, returns `nil`. For lists and
+--    other collection types, returns an empty collection.
+---
+
+function Field.defaultValue(self)
+	-- just to get things doing
+	if self.kind == 'list:string' then
+		return {}
+	else
+		return nil
+	end
+end
+
+
+---
+-- Remove a field previously registered with `new()`.
+---
+
+function Field.delete(self)
+	if _registeredFields[self.name] ~= nil then
+		for i = 1, #_onFieldRemovedCallbacks do
+			Callback.call(_onFieldRemovedCallbacks[i], self)
+		end
+		_registeredFields[self.name] = nil
+	end
+end
+
+
+---
+-- Enumerate all available fields.
+---
+
+function Field.each()
+	local iterator = pairs(_registeredFields)
+	local name, field
+	return function()
+		name, field = iterator(_registeredFields, name)
+		return field
+	end
+end
+
+
+---
+-- Return true if a field with the given name has been registered.
+---
+
+function Field.exists(fieldName)
+	return (_registeredFields[fieldName] ~= nil)
+end
+
+
+---
+-- Fetch a field by name.
+---
+
+function Field.get(fieldName)
+	local fld = _registeredFields[fieldName]
+	if not fld then
+		error(string.format('No such field `%s`', fieldName), 2)
+	end
+	return fld
+end
+
+
+---
 -- Merge value(s) to a field.
 --
 -- For simple values, the new value will replace the old one. For collections,
@@ -124,6 +151,16 @@ function Field.mergeValues(self, currentValue, newValue)
 	else
 		return newValue
 	end
+end
+
+
+function Field.onFieldAdded(fn)
+	table.insert(_onFieldAddedCallbacks, Callback.new(fn))
+end
+
+
+function Field.onFieldRemoved(fn)
+	table.insert(_onFieldRemovedCallbacks, Callback.new(fn))
 end
 
 

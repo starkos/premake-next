@@ -10,16 +10,14 @@ local REMOVE = 'REMOVE'
 local IGNORE = 'IGNORE'
 local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
 
-local EMPTY = {}
-
 
 function Query.new(blocks)
 	return {
 		_sourceBlocks = blocks,
 		_outerQuery = nil,
-		_localScope = EMPTY,
-		_fullScope = EMPTY,
-		_requiredScope = EMPTY
+		_localScope = _EMPTY,
+		_fullScope = _EMPTY,
+		_requiredScope = _EMPTY
 	}
 end
 
@@ -111,7 +109,7 @@ function Query.evaluate(self, env)
 
 				evalBlock.localOp = OUT_OF_SCOPE
 
-				local newSourceBlockWithAdditions = Block.new(Block.ADD, EMPTY, Block.baseDir(sourceBlock))
+				local newSourceBlockWithAdditions = Block.new(Block.ADD, _EMPTY, Block.baseDir(sourceBlock))
 
 				for fieldName, removePatterns in pairs(sourceBlock) do
 					if Field.exists(fieldName) then
@@ -155,7 +153,7 @@ function Query.evaluate(self, env)
 
 			-- Apply an add/remove block to the inherited results
 			if globalOp == sourceOp then
-				Query._mergeBlockWithValues(self, sourceBlock, globalValues, EMPTY, globalOp)
+				Query._mergeBlockWithValues(self, sourceBlock, globalValues, _EMPTY, globalOp)
 			end
 
 			-- _DEBUG('local after:', table.toString(localValues))

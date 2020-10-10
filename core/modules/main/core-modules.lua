@@ -1,1 +1,3 @@
+require('scripting')
+
 register('vstudio')

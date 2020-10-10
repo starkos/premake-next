@@ -10,8 +10,6 @@ local Block = require('block')
 local Condition = require('condition')
 local Stack = require('stack')
 
-local EMPTY = {}
-
 
 ---
 -- Construct a new Store.
@@ -21,8 +19,9 @@ local EMPTY = {}
 ---
 
 function Store.new()
+	-- if new fields are added here, update `snapshot()` and `restore()` too
 	return instantiateType(Store, {
-		_conditions = Stack.new({ Condition.new(EMPTY) }),
+		_conditions = Stack.new({ Condition.new(_EMPTY) }),
 		_blocks = {}
 	})
 end
@@ -89,6 +88,34 @@ end
 function Store.removeValue(self, fieldName, value)
 	Store._applyValueOperation(self, Block.REMOVE, fieldName, value)
 	return self
+end
+
+
+---
+-- Make a note of the current store state, so it can be rolled back later.
+---
+
+function Store.snapshot(self)
+	local snapshot = {
+		_conditions = self._conditions,
+		_blocks = self._blocks
+	}
+
+	self._conditions = table.shallowCopy(self._conditions)
+	self._blocks = table.shallowCopy(self._blocks)
+	Store.pushCondition(self, _EMPTY)
+
+	return snapshot
+end
+
+
+---
+-- Roll back the store state to a previous snapshot.
+---
+
+function Store.rollback(self, snapshot)
+	self._conditions = snapshot._conditions
+	self._blocks = snapshot._blocks
 end
 
 

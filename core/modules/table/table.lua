@@ -100,6 +100,19 @@ end
 
 
 ---
+-- Make a shallow copy of a table.
+---
+
+function table.shallowCopy(self)
+	local copy = {}
+	for key, value in pairs(self) do
+		copy[key] = value
+	end
+	return copy
+end
+
+
+---
 -- Return a sorted array of keys used in a table.
 ---
 

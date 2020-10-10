@@ -2,7 +2,7 @@
 -- Premake helper APIs.
 ---
 
-local buffer = require('buffer')
+local State = require('state')
 local Store = require('store')
 
 local premake = _PREMAKE.premake
@@ -13,6 +13,19 @@ _PREMAKE.WEBSITE = 'https://github.com/starkos/premake-next'
 
 local _env = {}
 local _store = Store.new()
+
+
+onRequire('testing', function (testing)
+	local snapshot
+
+	testing.onBeforeTest(function ()
+		snapshot = _store:snapshot()
+	end)
+
+	testing.onAfterTest(function ()
+		_store:rollback(snapshot)
+	end)
+end)
 
 
 function premake.callArray(funcs, ...)
@@ -54,14 +67,17 @@ end
 
 function premake.export(obj, exportPath, exporter)
 	local contents = io.capture(function ()
-		-- _indentLevel = 0
 		exporter(obj)
-		-- _indentLevel = 0
 	end)
 
 	if not io.compareFile(exportPath, contents) then
 		io.writeFile(exportPath, contents)
 	end
+end
+
+
+function premake.select(env)
+	return State.new(_store, table.mergeKeys(_env, env))
 end
 
 

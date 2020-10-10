@@ -15,8 +15,6 @@ local Query = doFile('./src/query.lua')
 State.INHERIT = 'inherit'
 State.NO_INHERIT = 'no-inherit'
 
-local EMPTY = {}
-
 
 -- Enable dot-indexing of field values
 State.__index = function(self, key)
@@ -26,7 +24,7 @@ end
 
 local function _new(values)
 	local newState = instantiateType(State, values)
-	newState._blocks = EMPTY
+	newState._blocks = _EMPTY
 	return newState
 end
 
@@ -43,7 +41,7 @@ end
 function State.new(store, env)
 	return _new({
 		_query = Query.new(Store.blocks(store)),
-		_env = env or EMPTY
+		_env = env or _EMPTY
 	})
 end
 
@@ -70,7 +68,7 @@ end
 ---
 
 function State.get(self, fieldName)
-	if self._blocks == EMPTY then
+	if self._blocks == _EMPTY then
 		self._blocks = Query.evaluate(self._query, self._env)
 		self._emptyValues = {}
 	end
@@ -85,13 +83,13 @@ function State.get(self, fieldName)
 		end
 
 		if value == nil then
-			self._emptyValues[fieldName] = EMPTY
+			self._emptyValues[fieldName] = _EMPTY
 		else
 			self[fieldName] = value
 		end
 	end
 
-	if value ~= EMPTY then
+	if value ~= _EMPTY then
 		return value
 	end
 end

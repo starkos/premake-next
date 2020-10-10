@@ -20,7 +20,7 @@ function Project.new(state, name, inherit)
 
 	prj.name = name
 	prj.filename = prj.filename or name
-	prj.location = prj.location or os.getCwd()
+	prj.location = prj.location or prj.baseDir or os.getCwd()
 
 	return instantiateType(Project, prj)
 end

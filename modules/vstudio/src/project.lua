@@ -1,10 +1,17 @@
+local premake = require('premake')
+
+local vstudio = select(1, ...)
+
 local project = {}
 
 
+function project.prepare(prj)
+	prj.exportPath = vstudio.vcxproj.filename(prj)
+end
+
+
 function project.export(prj)
-	io.writeln('<?xml version="1.0" encoding="utf-8"?>')
-	io.writeln('<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">')
-	io.write('</Project>')
+	premake.export(prj, prj.exportPath, vstudio.vcxproj.export)
 end
 
 
