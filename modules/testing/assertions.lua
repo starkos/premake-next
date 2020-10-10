@@ -5,6 +5,29 @@
 local testing = select(1, ...)
 
 
+function testing.capture(expected)
+	local actual = io.captured() .. '\n'
+
+	-- create line-by-line iterators for both values
+	local iActual = actual:gmatch("(.-)" .. '\n')
+	local iExpect = expected:gmatch("(.-)\n")
+
+	-- compare each value line by line
+	local lineNum = 1
+	local actualLine = iActual()
+	local expectLine = iExpect()
+	while expectLine do
+		if expectLine ~= actualLine then
+			testing.fail("(%d) expected:\n%s\n...but was:\n%s\nfulltext:\n%s", lineNum, expectLine, actualLine, actual)
+		end
+
+		lineNum = lineNum + 1
+		actualLine = iActual()
+		expectLine = iExpect()
+	end
+end
+
+
 function testing.fail(format, ...)
 	local args = { ... }
 	local depth = 3

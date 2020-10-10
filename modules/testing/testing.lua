@@ -195,9 +195,9 @@ function testing.runIndividualTest(suiteName, testName)
 	local ok, err = testing.runSuiteSetup(suiteName)
 
 	if ok then
-		premake.capture(function()
+		io.capture(function()
 			local suite = _suites[suiteName]
-			ok, err = xpcall(suite._runner, _failureHandler, suite[testName])
+			ok, err = Callback.call(suite._runner, suite[testName])
 		end)
 	end
 
@@ -231,7 +231,7 @@ function testing._testRunner(suiteName, testName)
 
 	if ok then
 		local suite = _suites[suiteName]
-		premake.capture(function()
+		io.capture(function()
 			ok, err = xpcall(suite[testName], _failureHandler)
 		end)
 	end
@@ -253,7 +253,7 @@ function testing.runSuiteSetup(suiteName)
 	local suite = _suites[suiteName]
 
 	if type(suite.setup) == 'function' then
-		return xpcall(suite._runner, _failureHandler, suite.setup)
+		return Callback.call(suite._runner, suite.setup)
 	else
 		return true
 	end
@@ -266,7 +266,7 @@ function testing.runSuiteTeardown(suiteName)
 	local suite = _suites[suiteName]
 
 	if type(suite.teardown) == 'function' then
-		ok, err = xpcall(suite._runner, _failureHandler, suite.teardown)
+		ok, err = Callback.call(suite._runner, suite.teardown)
 	else
 		ok = true
 	end
@@ -304,9 +304,10 @@ function testing.declare(suiteName, ...)
 	})
 
 	suite._aliases = table.joinArrays(suiteName, suiteName .. 'Tests', ...)
+
 	-- restore script vars state before running test functions
 	suite._runner = Callback.new(function(fn)
-		fn()
+		return xpcall(fn, _failureHandler)
 	end)
 
 	_suites[suiteName] = suite

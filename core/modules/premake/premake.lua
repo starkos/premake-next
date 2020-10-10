@@ -27,29 +27,6 @@ function premake.callArray(funcs, ...)
 end
 
 
-local _captured
-
-function premake.capture(fn)
-	local previousCapture = _captured
-
-	_captured = buffer.new()
-	fn()
-	local captured = buffer.close(_captured)
-
-	_captured = previousCapture
-	return captured
-end
-
-
-function premake.captured()
-	if _captured then
-		return buffer.tostring(_captured)
-	else
-		return ''
-	end
-end
-
-
 function premake.checkRequired(obj, ...)
 	local n = select('#', ...)
 	for i = 1, n do
@@ -76,7 +53,15 @@ end
 
 
 function premake.export(obj, exportPath, exporter)
-	exporter(obj)
+	local contents = io.capture(function ()
+		-- _indentLevel = 0
+		exporter(obj)
+		-- _indentLevel = 0
+	end)
+
+	if not io.compareFile(exportPath, contents) then
+		io.writeFile(exportPath, contents)
+	end
 end
 
 

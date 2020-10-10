@@ -78,6 +78,7 @@ size_t pmk_bufferLen(pmk_Buffer* b);
 void pmk_bufferPrintf(pmk_Buffer* b, const char* fmt, ...);
 void pmk_bufferPuts(pmk_Buffer* b, const char* ptr, size_t len);
 int  pmk_chdir(const char* path);
+int  pmk_compareFile(const char* path, const char* contents);
 int  pmk_doFile(lua_State* L, const char* filename);
 void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
@@ -96,15 +97,18 @@ const char* pmk_locateScript(char* result, lua_State* L, const char* filename);
 void pmk_matchDone(Matcher* matcher);
 int  pmk_matchName(Matcher* matcher, char* buffer, size_t bufferSize);
 int  pmk_matchNext(Matcher* matcher);
+int  pmk_mkdir(const char* path);
 Matcher* pmk_matchStart(const char* directory, const char* pattern);
 int  pmk_moduleLoader(lua_State* L);
 void pmk_normalize(char* result, const char* path);
+FILE* pmk_openFile(const char* path, const char* mode);
 int  pmk_pathKind(const char* path);
 int  pmk_patternFromWildcards(char* result, int maxLen, const char* value, int isPath);
 int  pmk_pcall(lua_State* L, int nargs, int nresults);
 const char** pmk_searchPaths(lua_State* L);
 void pmk_translatePath(char* result, const char* value, const char separator);
 void pmk_translatePathInPlace(char* value, const char sep);
+int  pmk_writeFile(const char* path, const char* contents);
 
 /* Global extensions */
 
@@ -113,11 +117,16 @@ int g_forceRequire(lua_State* L);
 int g_loadFile(lua_State* L);
 int g_loadFileOpt(lua_State* L);
 
+/* I/O library extensions */
+
+int pmk_io_compareFile(lua_State* L);
+int pmk_io_writeFile(lua_State* L);
+
 /* String buffer extensions */
 
 int pmk_buffer_new(lua_State* L);
 int pmk_buffer_close(lua_State* L);
-int pmk_buffer_tostring(lua_State* L);
+int pmk_buffer_toString(lua_State* L);
 int pmk_buffer_write(lua_State* L);
 int pmk_buffer_writeln(lua_State* L);
 
@@ -130,6 +139,7 @@ int pmk_os_matchDone(lua_State* L);
 int pmk_os_matchName(lua_State* L);
 int pmk_os_matchNext(lua_State* L);
 int pmk_os_matchStart(lua_State* L);
+int pmk_os_mkdir(lua_State* L);
 
 /* Path module functions */
 

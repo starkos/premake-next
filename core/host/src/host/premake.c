@@ -28,9 +28,15 @@ static const luaL_Reg g_functions[] = {
 static const luaL_Reg buffer_functions[] = {
 	{ "new", pmk_buffer_new },
 	{ "close", pmk_buffer_close },
-	{ "tostring", pmk_buffer_tostring },
+	{ "toString", pmk_buffer_toString },
 	{ "write", pmk_buffer_write },
 	{ "writeln", pmk_buffer_writeln },
+	{ NULL, NULL }
+};
+
+static const luaL_Reg io_functions[] = {
+	{ "compareFile", pmk_io_compareFile },
+	{ "writeFile", pmk_io_writeFile },
 	{ NULL, NULL }
 };
 
@@ -42,6 +48,7 @@ static const luaL_Reg os_functions[] = {
 	{ "matchName", pmk_os_matchName },
 	{ "matchNext", pmk_os_matchNext },
 	{ "matchStart", pmk_os_matchStart },
+	{ "mkdir", pmk_os_mkdir },
 	{ NULL, NULL }
 };
 
@@ -103,6 +110,7 @@ pmk_State* pmk_init(pmk_ErrorHandler onError)
 	luaL_openlibs(L);
 
 	registerGlobalLibrary(L, "_G", g_functions);
+	registerGlobalLibrary(L, "io", io_functions);
 	registerGlobalLibrary(L, "os", os_functions);
 	registerGlobalLibrary(L, "string", string_functions);
 

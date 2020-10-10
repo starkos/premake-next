@@ -12,14 +12,15 @@ vstudio.workspace = doFile('./src/workspace.lua', vstudio)
 function vstudio.export(version)
 	local workspaces = vstudio.extractWorkspaces(version)
 
+	print('Exporting...')
 	for wi = 1, #workspaces do
 		local wks = workspaces[wi]
-		printf('Exporting workspace "%s"...', wks.name)
+		printf('  %s', wks.name)
 		premake.export(wks, wks.exportPath, vstudio.workspace.export)
 
 		for pi = 1, #wks.projects do
 			local prj = wks.projects[pi]
-			printf('Exporting project "%s"...', prj.name)
+			printf('  %s', prj.name)
 			premake.export(prj, prj.exportPath, vstudio.project.export)
 		end
 	end
@@ -27,6 +28,8 @@ end
 
 
 function vstudio.extractWorkspaces(version)
+	print('Configuring...')
+
 	local state = State.new(premake.store(), {
 		action = 'vstudio',
 		version = version
@@ -50,13 +53,13 @@ end
 
 
 function vstudio.prepareWorkspace(wks)
-	printf('Configuring workspace "%s"...', wks.name)
+	printf('  %s', wks.name)
 	wks.exportPath = path.join(wks.location, wks.filename) .. '.sln'
 end
 
 
 function vstudio.prepareProject(prj)
-	printf('Configuring project "%s"...', prj.name)
+	printf('  %s', prj.name)
 	prj.exportPath = path.join(prj.location, prj.filename) .. '.vcxproj'
 end
 
