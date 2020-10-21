@@ -1,7 +1,7 @@
 local premake = require('premake')
 local Workspace = require('dom').Workspace
 
-local DomWorkspaceTests = test.declare('dom_workspace')
+local DomWorkspaceTests = test.declare('DomWorkspaceTests', 'dom')
 
 
 function DomWorkspaceTests.new_setsName()

@@ -1,4 +1,4 @@
-local TypeTests = test.declare('types')
+local TypeTests = test.declare('TypeTests', 'types')
 
 
 function TypeTests.declareType_associatesClassMethods()
