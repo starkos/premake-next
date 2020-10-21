@@ -13,17 +13,19 @@ _PREMAKE.WEBSITE = 'https://github.com/starkos/premake-next'
 
 local _env = {}
 local _store = Store.new()
+local _testStateSnapshot
 
 
 onRequire('testing', function (testing)
 	local snapshot
 
 	testing.onBeforeTest(function ()
-		snapshot = _store:snapshot()
+		snapshot = Store.snapshot(_store)
+		Store.rollback(_store, _testStateSnapshot)
 	end)
 
 	testing.onAfterTest(function ()
-		_store:rollback(snapshot)
+		Store.rollback(_store, snapshot)
 	end)
 end)
 
@@ -78,6 +80,16 @@ end
 
 function premake.select(env)
 	return State.new(_store, table.mergeKeys(_env, env))
+end
+
+
+---
+-- Creates a snapshot of the current store state, before the user's project script
+-- has run, to enable automated testing without picking up user project artifacts.
+---
+
+function premake.snapshotStateForTesting()
+	_testStateSnapshot = Store.snapshot(_store)
 end
 
 

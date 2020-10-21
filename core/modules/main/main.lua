@@ -6,17 +6,20 @@
 ---
 
 local options = require('options')
-local p = require('premake')
 local path = require('path')
+local premake = require('premake')
 
 local m = {}
 
 m.PROJECT_SCRIPT_NAME = 'premake6.lua'
 m.SYSTEM_SCRIPT_NAME = 'premake6-system.lua'
 
-doFile('./core-fields.lua')
-doFile('./core-options.lua', m)
-doFile('./core-modules.lua')
+doFile('./core_fields.lua', m)
+doFile('./core_options.lua', m)
+doFile('./core_modules.lua', m)
+
+premake.snapshotStateForTesting()
+
 
 -- Bootstrapping functions, in execution order
 
@@ -38,7 +41,7 @@ function m.locateProjectScript()
 		error(string.format('no such file `%s`', name), 0)
 	end
 
-	local location = p.locateScript(name) or name
+	local location = premake.locateScript(name) or name
 	_PREMAKE.MAIN_SCRIPT = location
 	_PREMAKE.MAIN_SCRIPT_DIR = path.getDirectory(location)
 end
@@ -82,7 +85,7 @@ m.steps = {
 }
 
 function m.run()
-	p.callArray(m.steps)
+	premake.callArray(m.steps)
 end
 
 

@@ -1,7 +1,7 @@
-local IOTests = test.declare('io')
+local IOCaptureTests = test.declare('IOCaptureTests', 'io')
 
 
-function IOTests.capture_capturesDefaultOutput()
+function IOCaptureTests.capture_capturesDefaultOutput()
 	local result = io.capture(function()
 		io.write('to default output')
 	end)
@@ -9,7 +9,7 @@ function IOTests.capture_capturesDefaultOutput()
 end
 
 
-function IOTests.capture_stderr()
+function IOCaptureTests.capture_stderr()
 	local result = io.stderr:capture(function()
 		io.stderr:write('to stderr')
 	end)
@@ -17,7 +17,7 @@ function IOTests.capture_stderr()
 end
 
 
-function IOTests.capture_stdout()
+function IOCaptureTests.capture_stdout()
 	local result = io.stdout:capture(function()
 		io.stdout:write('to stdout')
 	end)
@@ -25,7 +25,7 @@ function IOTests.capture_stdout()
 end
 
 
-function IOTests.captured_returnsCurrentCapture()
+function IOCaptureTests.captured_returnsCurrentCapture()
 	local result
 	io.capture(function()
 		io.write('before')
@@ -33,8 +33,4 @@ function IOTests.captured_returnsCurrentCapture()
 		io.write('after')
 	end)
 	test.isEqual('before', result)
-end
-
-
-function IOTests.writeln_appensEol()
 end
