@@ -1,4 +1,5 @@
 #include "../premake_internal.h"
+
 #include <string.h>
 
 /**

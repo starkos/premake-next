@@ -30,6 +30,17 @@ int pmk_path_getAbsolute(lua_State* L)
 }
 
 
+int pmk_path_getBaseName(lua_State* L)
+{
+	char buffer[PATH_MAX];
+
+	const char* path = luaL_checkstring(L, 1);
+	pmk_getFileBaseName(buffer, path);
+	lua_pushstring(L, buffer);
+	return (1);
+}
+
+
 int pmk_path_getDirectory(lua_State* L)
 {
 	char buffer[PATH_MAX];
@@ -37,7 +48,17 @@ int pmk_path_getDirectory(lua_State* L)
 	const char* path = luaL_checkstring(L, 1);
 	pmk_getDirectory(buffer, path);
 	lua_pushstring(L, buffer);
+	return (1);
+}
 
+
+int pmk_path_getName(lua_State* L)
+{
+	char buffer[PATH_MAX];
+
+	const char* path = luaL_checkstring(L, 1);
+	pmk_getFileName(buffer, path);
+	lua_pushstring(L, buffer);
 	return (1);
 }
 
@@ -60,6 +81,30 @@ int pmk_path_getKind(lua_State* L)
 		break;
 	}
 
+	return (1);
+}
+
+
+int pmk_path_getRelative(lua_State* L)
+{
+	char buffer[PATH_MAX];
+
+	const char* basePath = luaL_checkstring(L, 1);
+	const char* targetPath = luaL_checkstring(L, 2);
+	pmk_getRelativePath(buffer, basePath, targetPath);
+	lua_pushstring(L, buffer);
+	return (1);
+}
+
+
+int pmk_path_getRelativeFile(lua_State* L)
+{
+	char buffer[PATH_MAX];
+
+	const char* baseFile = luaL_checkstring(L, 1);
+	const char* targetFile = luaL_checkstring(L, 2);
+	pmk_getRelativeFile(buffer, baseFile, targetFile);
+	lua_pushstring(L, buffer);
 	return (1);
 }
 

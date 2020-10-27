@@ -54,8 +54,12 @@ static const luaL_Reg os_functions[] = {
 
 static const luaL_Reg path_functions[] = {
 	{ "getAbsolute", pmk_path_getAbsolute },
+	{ "getBaseName", pmk_path_getBaseName },
 	{ "getDirectory", pmk_path_getDirectory },
 	{ "getKind", pmk_path_getKind },
+	{ "getName", pmk_path_getName },
+	{ "getRelative", pmk_path_getRelative },
+	{ "getRelativeFile", pmk_path_getRelativeFile },
 	{ "isAbsolute", pmk_path_isAbsolute },
 	{ "join", pmk_path_join },
 	{ "normalize", pmk_path_normalize },
