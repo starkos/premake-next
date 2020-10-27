@@ -126,7 +126,7 @@ function Query.evaluate(self, env)
 						for i = 1, #removedValues do
 							local value = removedValues[i]
 							-- in this case, don't want to add duplicates even if the field would otherwise allow it
-							if not Field.contains(field, currentLocalValues, value) then
+							if not Field.matches(field, currentLocalValues, value) then
 								table.insert(valuesToAdd, value)
 							end
 						end

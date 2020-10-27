@@ -6,19 +6,19 @@ local FieldRegisterTests = test.declare('FieldRegisterTests', 'field')
 local testField
 
 function FieldRegisterTests.setup()
-	testField = Field.new({
+	testField = Field.register({
 		name = 'testField',
 		kind = 'string'
 	})
 end
 
 function FieldRegisterTests.teardown()
-	Field.delete(testField)
+	Field.remove(testField)
 end
 
 
 ---
--- `register()` should return the populated field definition.
+-- `register()` should return the populated field definition
 ---
 
 function FieldRegisterTests.register_returnsFieldDefinition()
@@ -27,7 +27,7 @@ end
 
 
 ---
--- `get()` with a valid field name should return the field's definition.
+-- `get()` with a valid field name should return the field's definition
 ---
 
 function FieldRegisterTests.get_returnsFieldDefinition()
@@ -37,7 +37,7 @@ end
 
 
 ---
--- `get` should raise an error if the field hasn't been registered.
+-- `get` should raise an error if the field hasn't been registered
 ---
 
 function FieldRegisterTests.get_raisesError_onUnknownField()
@@ -51,7 +51,7 @@ end
 
 
 ---
--- `exists` should return true for a valid field, and false otherwise.
+-- `exists` should return true for a valid field, and false otherwise
 ---
 
 function FieldRegisterTests.exists_returnsTrue_onValidField()
@@ -64,10 +64,10 @@ end
 
 
 ---
--- `delete()` removes the field.
+-- `remove()` removes the field
 ---
 
-function FieldRegisterTests.delete_removesField_onValidField()
-	Field.delete(testField)
+function FieldRegisterTests.remove_removesField_onValidField()
+	Field.remove(testField)
 	test.isFalse(Field.exists('testField'))
 end
