@@ -21,12 +21,12 @@ onRequire('testing', function (testing)
 	local snapshot
 
 	testing.onBeforeTest(function ()
-		snapshot = Store.snapshot(_store)
-		Store.rollback(_store, _testStateSnapshot)
+		snapshot = _store:snapshot()
+		_store:rollback(_testStateSnapshot)
 	end)
 
 	testing.onAfterTest(function ()
-		Store.rollback(_store, snapshot)
+		_store:rollback(snapshot)
 	end)
 end)
 

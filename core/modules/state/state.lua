@@ -1,6 +1,14 @@
 ---
--- A query processes selections against a store. Create new queries
--- by calling `Store.query()`.
+-- Query and access configuration settings which meet a certain set of criteria.
+--
+-- "Environment" is a collection of key-value pairs which describes the current
+-- operating environment. This includes things like the host OS, the target action,
+-- etc. These values are used to satisfy criteria.
+--
+-- "Scope" is a singular key-value pair. Like environment, it is also used to
+-- satisfy criteria. But it also limits results to those blocks which specifically
+-- test for that scope. So if scope is set to the project 'Project1', only blocks
+-- which specifically test for `projects = "Project1"` will be considered.
 ---
 
 local Block = require('block')
@@ -15,6 +23,8 @@ local Query = doFile('./src/query.lua')
 State.INHERIT = 'inherit'
 State.NO_INHERIT = 'no-inherit'
 
+local _UNSET = {}
+
 
 -- Enable dot-indexing of field values
 State.__index = function(self, key)
@@ -23,9 +33,10 @@ end
 
 
 local function _new(values)
-	local newState = instantiateType(State, values)
-	newState._blocks = _EMPTY
-	return newState
+	return instantiateType(State, table.mergeKeys(values, {
+		_blocks = _UNSET,
+		_withInheritance = _UNSET
+	}))
 end
 
 
@@ -68,12 +79,12 @@ end
 ---
 
 function State.get(self, fieldName)
-	if self._blocks == _EMPTY then
+	if self._blocks == _UNSET then
 		self._blocks = Query.evaluate(self._query, self._env)
-		self._emptyValues = {}
+		self._unsetValues = {}
 	end
 
-	local value = rawget(self, fieldName) or self._emptyValues[fieldName]
+	local value = rawget(self, fieldName) or self._unsetValues[fieldName]
 
 	if value == nil then
 		value = self._env[fieldName]
@@ -83,13 +94,13 @@ function State.get(self, fieldName)
 		end
 
 		if value == nil then
-			self._emptyValues[fieldName] = _EMPTY
+			self._unsetValues[fieldName] = _UNSET
 		else
 			self[fieldName] = value
 		end
 	end
 
-	if value ~= _EMPTY then
+	if value ~= _UNSET then
 		return value
 	end
 end
@@ -122,7 +133,9 @@ end
 -- a workspace.
 --
 -- @param scope
---    Key-value pair(s) representing the new scope, ex. `{ project = 'Project1' }`.
+--    The scope being selected, ex. "workspaces" or "projects".
+-- @param identifier
+--    The scope identifier, ex. "MyWorkspace" or "MyProject".
 -- @param inherit
 --    One of `State.INHERIT` or `State.NO_INHERIT`. Controls whether values should be inherited from
 --    the source state.
@@ -130,10 +143,12 @@ end
 --    A new State instance representing the inner scope.
 ---
 
-function State.select(self, scope, inherit)
+function State.select(self, scope, identifier, inherit)
+	local fullScope = { [scope] = { identifier }}
+
 	local newState = _new({
-		_query = Query.select(self._query, scope),
-		_env = table.mergeKeys(self._env, scope)
+		_query = Query.select(self._query, fullScope),
+		_env = table.mergeKeys(self._env, fullScope)
 	})
 
 	if inherit == State.INHERIT then
@@ -153,7 +168,7 @@ end
 ---
 
 function State.withInheritance(self)
-	if self._withInheritance == nil then
+	if self._withInheritance == _UNSET then
 		if self._isInheriting then
 			self._withInheritance = self
 		else

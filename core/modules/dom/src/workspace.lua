@@ -16,7 +16,7 @@ end
 
 
 function Workspace.new(state, name, inherit)
-	local wks = State.select(state, { workspaces = name }, inherit)
+	local wks = State.select(state, 'workspaces', name, inherit)
 
 	wks.name = name
 	wks.filename = wks.filename or name

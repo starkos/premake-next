@@ -49,15 +49,70 @@ end
 
 
 ---
+-- Matching function, evaluates a tree of test clauses against a specific collection
+-- of values and scopes.
+---
+
+local function _match(operation, values, scope, allowNil)
+	local result
+
+	local op = operation._op
+
+	if op == OP_TEST then
+
+		local fieldName = operation[1]
+		local pattern = operation[2]
+
+		local testValue
+		local field = Field.get(fieldName)
+		if field.isScope and scope ~= nil then
+			testValue = scope[fieldName]
+		else
+			testValue = values[fieldName]
+		end
+
+		if testValue then
+			result = Field.matches(field, testValue, pattern, true)
+		else
+			result = allowNil
+		end
+
+	elseif op == OP_AND then
+
+		for i = 1, #operation do
+			if not _match(operation[i], values, scope, allowNil) then
+				return false
+			end
+		end
+		return true
+
+	elseif op == OP_NOT then
+
+		return not _match(operation[1], values, scope, allowNil)
+
+	elseif op == OP_OR then
+
+		for i = 1, #operation do
+			if _match(operation[i], values, scope, allowNil) then
+				return true
+			end
+		end
+		return false
+
+	end
+
+	return result
+end
+
+
+---
 -- Returns `true` if every clause in the condition has a passing value in `values`,
 -- or no value (`nil`). Returns `false` if `values` contains an non-nil value which
 -- fails one of the clauses.
 ---
 
 function Condition.isNotFailedBy(self, values)
-	local ok, result = pcall(function()
-		return Condition._test(self._rootTest, values, ALLOW_NIL)
-	end)
+	local ok, result = pcall(_match, self._rootTest, values, scope, ALLOW_NIL)
 
 	if not ok then
 		error(result, 2)
@@ -68,13 +123,18 @@ end
 
 
 ---
--- Returns `true` if every clause in the condition has a passing non-nil value in `values`.
+-- Test a condition against a specific collection of values.
+--
+-- @param values
+--    A collection of field-value pairs to be tested against.
+-- @param scope
+--    An optional key-value collection of scope names and values. If provided, the
+--    condition will only pass if any scope fields tested by the condition have an
+--    exact match in this collections.
 ---
 
-function Condition.isSatisfiedBy(self, values)
-	local ok, result = pcall(function()
-		return Condition._test(self._rootTest, values)
-	end)
+function Condition.matches(self, values, scope)
+	local ok, result = pcall(_match, self._rootTest, values, scope)
 
 	if not ok then
 		error(result, 2)
@@ -221,7 +281,7 @@ function Condition._test(operation, values, allowNil)
 			result = allowNil
 		else
 			local field = Field.get(fieldName)
-			result = Field.contains(field, testValue, pattern, true)
+			result = Field.matches(field, testValue, pattern, true)
 		end
 
 	elseif op == OP_AND then
