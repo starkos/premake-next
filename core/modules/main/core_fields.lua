@@ -4,22 +4,28 @@
 
 local Field = require('field')
 
-Field.new({
+Field.register({
+	name = 'action',
+	kind = 'string'
+})
+
+Field.register({
 	name = 'baseDir',
 	kind = 'path'
 })
 
-Field.new({
+Field.register({
 	name = 'configurations',
-	kind = 'list:string'
+	kind = 'list:string',
+	isScope = true
 })
 
-Field.new({
+Field.register({
 	name = 'defines',
 	kind = 'list:string'
 })
 
-Field.new({
+Field.register({
 	name = 'exceptionHandling',
 	kind = 'string',
 	allowed = {
@@ -31,12 +37,12 @@ Field.new({
 	}
 })
 
-Field.new({
+Field.register({
 	name = 'filename',
 	kind = 'string'
 })
 
-Field.new({
+Field.register({
 	name = 'kind',
 	kind = 'string',
 	allowed = {
@@ -48,17 +54,18 @@ Field.new({
 })
 
 
-Field.new({
+Field.register({
 	name = 'location',
 	kind = 'path'
 })
 
-Field.new({
+Field.register({
 	name = 'projects',
-	kind = 'list:string'
+	kind = 'list:string',
+	isScope = true
 })
 
-Field.new({
+Field.register({
 	name = 'rtti',
 	kind = 'string',
 	allowed = {
@@ -68,7 +75,7 @@ Field.new({
 	}
 })
 
-Field.new({
+Field.register({
 	name = 'system',
 	kind = 'string',
 	allowed = {
@@ -84,7 +91,8 @@ Field.new({
 	},
 })
 
-Field.new({
+Field.register({
 	name = 'workspaces',
-	kind = 'list:string'
+	kind = 'list:string',
+	isScope = true
 })

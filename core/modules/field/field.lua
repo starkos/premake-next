@@ -9,8 +9,67 @@ local Callback = require('callback')
 local Field = declareType('Field')
 
 local _registeredFields = {}
+
 local _onFieldAddedCallbacks = {}
 local _onFieldRemovedCallbacks = {}
+
+local _kinds = {}
+
+local _processors = {
+	default = {},
+	merge = {},
+	remove = {},
+	match = {}
+}
+
+
+---
+-- Build a field processing function for a specific operation type (e.g "merge",
+-- "remove") for a specific field kind (e.g. "list:string").
+--
+-- An processing function takes the form of:
+--
+--    function (field, currentValue, incomingValues, innerProcessor)
+--
+-- It receives the target field and the current value of that field, and then
+-- applies the appropriate operation to reconcile the current and incoming
+-- values. For collection types like "list:string", `innerProcessor` would be
+-- the processor function for the next data type, "string" in this case.
+--
+-- Once built, processing functions are cached for quick lookup when reused.
+--
+-- @param operation
+--    The type of processing required, one of the operation names 'default',
+--    'merge', etc.
+-- @param kind
+--    The kind of field data to be operated upon.
+-- @return
+--    The generated processing function.
+---
+
+local function _fetchProcessor(operation, kind)
+	if kind == nil then  -- ends recursion
+		return nil
+	end
+
+	local processor = _processors[operation][kind]
+	if processor ~= nil then
+		return processor
+	end
+
+	local thisKind, nextKind = string.splitOnce(kind, ':', true)
+
+	local outerProcessor = _kinds[thisKind][operation]
+	local innerProcessor = _fetchProcessor(operation, nextKind)
+
+	processor = function (field, currentValue, incomingValues, ...)
+		return outerProcessor(field, currentValue, incomingValues, innerProcessor, ...)
+	end
+
+	_processors[operation][kind] = processor
+
+	return processor
+end
 
 
 ---
@@ -30,12 +89,15 @@ local _onFieldRemovedCallbacks = {}
 --    not be registered.
 ---
 
-function Field.new(definition)
-	local field = instantiateType(Field, {
-		name = definition.name,
-		kind = definition.kind,
-		allowed = definition.allowed
-	})
+function Field.register(definition)
+	local field = instantiateType(Field, definition)
+
+	for op in pairs(_processors) do
+		field[op] = _fetchProcessor(op, field.kind)
+		if field[op] == nil then
+			return nil, 'invalid field kind "' .. definition.kind .. '"'
+		end
+	end
 
 	_registeredFields[field.name] = field
 
@@ -48,24 +110,39 @@ end
 
 
 ---
--- Tests a pattern against field value(s); returns true if the pattern can be matched.
+-- Remove a previously registered field.
 ---
 
-function Field.contains(self, value, pattern, plain)
-	-- just to get things going
-	if type(value) == 'table' then
-		for i = 1, #value do
-			local value = value[i]
-			local startAt, endAt = string.find(value, pattern, 1, plain)
-			if (startAt == 1 and endAt == #value) then
-				return true
-			end
+function Field.remove(self)
+	if _registeredFields[self.name] ~= nil then
+		for i = 1, #_onFieldRemovedCallbacks do
+			Callback.call(_onFieldRemovedCallbacks[i], self)
 		end
-		return false
-	else
-		local startAt, endAt = string.find(value, pattern, 1, plain)
-		return (startAt == 1 and endAt == #value)
+		_registeredFields[self.name] = nil
 	end
+end
+
+
+---
+-- Register a new kind of data to be stored by fields.
+--
+-- @param name
+--    The name of the field kind, ex. "string".
+-- @param operations
+--    A table of name-function pairs to handle the field operations: 'default',
+--    'match', 'merge', 'remove'.
+-- @returns
+--    True if successful, or `nil` and an error message if functions are not
+--    provided for all operations.
+---
+
+function Field.registerKind(name, operations)
+	for op in pairs(_processors) do
+		if type(operations[op]) ~= 'function' then
+			return nil, 'missing handler for "' .. op .. '" operation'
+		end
+	end
+	_kinds[name] = operations
 end
 
 
@@ -78,26 +155,7 @@ end
 ---
 
 function Field.defaultValue(self)
-	-- just to get things doing
-	if self.kind == 'list:string' then
-		return {}
-	else
-		return nil
-	end
-end
-
-
----
--- Remove a field previously registered with `new()`.
----
-
-function Field.delete(self)
-	if _registeredFields[self.name] ~= nil then
-		for i = 1, #_onFieldRemovedCallbacks do
-			Callback.call(_onFieldRemovedCallbacks[i], self)
-		end
-		_registeredFields[self.name] = nil
-	end
+	return _processors.default[self.kind](self)
 end
 
 
@@ -138,6 +196,15 @@ end
 
 
 ---
+-- Tests a pattern against a field's values.
+---
+
+function Field.matches(self, value, pattern, plain)
+	return _processors.match[self.kind](self, value, pattern, plain)
+end
+
+
+---
 -- Merge value(s) to a field.
 --
 -- For simple values, the new value will replace the old one. For collections,
@@ -145,12 +212,7 @@ end
 ---
 
 function Field.mergeValues(self, currentValue, newValue)
-	-- just to get things going
-	if self.kind == 'list:string' then
-		return table.joinArrays(currentValue or Field.defaultValue(self), newValue)
-	else
-		return newValue
-	end
+	return _processors.merge[self.kind](self, currentValue, newValue)
 end
 
 
@@ -169,29 +231,12 @@ end
 ---
 
 function Field.removeValues(self, currentValue, patternsToRemove)
-	-- just to get things going
-	if self.kind == 'list:string' then
-		local result = {}
-		local removed = {}
-
-		table.forEach(currentValue or Field.defaultValue(self), function(value)
-			for i = 1, #patternsToRemove do
-				if string.match(value, patternsToRemove[i]) then
-					table.insert(removed, value)
-					return -- value is removed; skip to next value
-				end
-			end
-
-			-- was not removed; add to new results
-			table.insert(result, value)
-		end)
-
-		return result, removed
-	else
-		-- not a collection type
-		return currentValue
-	end
+	return _processors.remove[self.kind](self, currentValue, patternsToRemove)
 end
 
+
+doFile('./src/kind_list.lua', Field)
+doFile('./src/kind_path.lua', Field)
+doFile('./src/kind_string.lua', Field)
 
 return Field
