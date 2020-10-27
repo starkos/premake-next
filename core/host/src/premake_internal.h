@@ -83,6 +83,10 @@ int  pmk_doFile(lua_State* L, const char* filename);
 void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
 void pmk_getDirectory(char* result, const char* value);
+int  pmk_getFileBaseName(char* result, const char* path);
+int  pmk_getFileName(char* result, const char* path);
+int  pmk_getRelativeFile(char* result, const char* baseFile, const char* targetFile);
+int  pmk_getRelativePath(char* result, const char* basePath, const char* targetPath);
 int  pmk_getTextColor();
 int  pmk_isAbsolutePath(const char* path);
 int  pmk_isFile(const char* filename);
@@ -122,7 +126,7 @@ int g_loadFileOpt(lua_State* L);
 int pmk_io_compareFile(lua_State* L);
 int pmk_io_writeFile(lua_State* L);
 
-/* String buffer extensions */
+/* Buffer library functions */
 
 int pmk_buffer_new(lua_State* L);
 int pmk_buffer_close(lua_State* L);
@@ -141,17 +145,21 @@ int pmk_os_matchNext(lua_State* L);
 int pmk_os_matchStart(lua_State* L);
 int pmk_os_mkdir(lua_State* L);
 
-/* Path module functions */
+/* Path library functions */
 
 int pmk_path_getAbsolute(lua_State* L);
+int pmk_path_getBaseName(lua_State* L);
 int pmk_path_getDirectory(lua_State* L);
+int pmk_path_getName(lua_State* L);
 int pmk_path_getKind(lua_State* L);
+int pmk_path_getRelative(lua_State* L);
+int pmk_path_getRelativeFile(lua_State* L);
 int pmk_path_isAbsolute(lua_State* L);
 int pmk_path_join(lua_State* L);
 int pmk_path_normalize(lua_State* L);
 int pmk_path_translate(lua_State* L);
 
-/* Premake module function */
+/* Premake library function */
 
 int pmk_premake_locateModule(lua_State* L);
 int pmk_premake_locateScript(lua_State* L);
@@ -162,6 +170,6 @@ int pmk_string_contains(lua_State* L);
 int pmk_string_patternFromWildcards(lua_State* L);
 int pmk_string_startsWith(lua_State* L);
 
-/* Terminal output functions */
+/* Terminal library functions */
 
 int pmk_terminal_textColor(lua_State* L);
