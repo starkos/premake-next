@@ -65,9 +65,9 @@ function Query.evaluate(self, env)
 	-- are added and removed, any blocks that had been previously skipped over need to be rechecked
 	-- to see if they have come into scope as a result of the new state.
 
-	-- local function _DEBUG(...)
-	-- 	test.print(...)
-	-- end
+	local function _DEBUG(...)
+		print(...)
+	end
 
 	local i = 1
 	while i <= #evalBlocks do
@@ -81,19 +81,23 @@ function Query.evaluate(self, env)
 			i = i + 1
 		else
 
-			-- _DEBUG('------------------------------------------------')
-			-- _DEBUG('INDEX:', i)
-			-- _DEBUG('BLOCK:', table.toString(block))
-			-- _DEBUG('LOCAL VALUES:', table.toString(localValues))
-			-- _DEBUG('GLOBAL VALUES:', table.toString(globalValues))
-			-- _DEBUG('LOCAL SCOPE:', table.toString(self._localScope))
-			-- _DEBUG('REQ SCOPE:', table.toString(self._requiredScope))
-			-- _DEBUG('FULL SCOPE:', table.toString(self._fullScope))
+			if _LOG_PREMAKE_QUERIES then
+				_DEBUG('------------------------------------------------')
+				_DEBUG('INDEX:', i)
+				_DEBUG('BLOCK:', table.toString(evalBlock))
+				_DEBUG('LOCAL VALUES:', table.toString(localValues))
+				_DEBUG('GLOBAL VALUES:', table.toString(globalValues))
+				_DEBUG('LOCAL SCOPE:', table.toString(self._localScope))
+				_DEBUG('REQ SCOPE:', table.toString(self._requiredScope))
+				_DEBUG('FULL SCOPE:', table.toString(self._fullScope))
+			end
 
 			local localOp, globalOp = Query._testBlock(self, sourceBlock, sourceOp, localValues, globalValues)
 
-			-- _DEBUG('localOp:', localOp)
-			-- _DEBUG('globalOp:', globalOp)
+			if _LOG_PREMAKE_QUERIES then
+				_DEBUG('localOp:', localOp)
+				_DEBUG('globalOp:', globalOp)
+			end
 
 			evalBlock.localOp = localOp
 			evalBlock.globalOp = globalOp
@@ -156,8 +160,10 @@ function Query.evaluate(self, env)
 				Query._mergeBlockWithValues(self, sourceBlock, globalValues, _EMPTY, globalOp)
 			end
 
-			-- _DEBUG('local after:', table.toString(localValues))
-			-- _DEBUG('global after:', table.toString(globalValues))
+			if _LOG_PREMAKE_QUERIES then
+				_DEBUG('local after:', table.toString(localValues))
+				_DEBUG('global after:', table.toString(globalValues))
+			end
 
 			if globalOp ~= IGNORE then
 				i = 1  -- something was changed, retest previously ignored blocks
@@ -188,27 +194,28 @@ function Query._testBlock(self, block, operation, localValues, globalValues)
 	local condition = Block.condition(block)
 
 	-- If the condition fails against the inherited state then this block isn't intended for us
-	if not Condition.isSatisfiedBy(condition, globalValues) then
+	if not Condition.matches(condition, globalValues) then
 		return IGNORE, IGNORE
 	end
 
 	if operation == ADD then
 
 		local meetsScopeRequirement = Condition.testsAllKeys(condition, self._localScope) or Condition.testsAllKeys(condition, self._requiredScope)
-		if meetsScopeRequirement and Condition.isSatisfiedBy(condition, localValues) then
+		local matchesCondition = Condition.matches(condition, localValues, self._fullScope)
+		if meetsScopeRequirement and matchesCondition then
 			return ADD, operation
 		end
 
-	else -- operation == REMOVE
+	else -- if operation == REMOVE
 
 		-- If condition matches current local state, block should be applied to results
-		if Condition.isSatisfiedBy(condition, localValues) then
+		if Condition.matches(condition, localValues, self._fullScope) then
 			return REMOVE, operation
 		end
 
 		-- If the local state is simply missing values listed in the condition, and doesn't
-		-- specifically fail any of the clauses, that means that this remove block applies to
-		-- something "below" us in the workspace, and the block should be applied here
+		-- specifically _fail_ any of the clauses, that means that this remove block applies
+		-- to something "below" us in the workspace, and the block should be applied here
 		if Condition.isNotFailedBy(condition, localValues) then
 			return REMOVE, operation
 		end

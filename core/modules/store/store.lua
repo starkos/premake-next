@@ -114,8 +114,8 @@ end
 ---
 
 function Store.rollback(self, snapshot)
-	self._conditions = snapshot._conditions
-	self._blocks = snapshot._blocks
+	self._conditions = table.shallowCopy(snapshot._conditions)
+	self._blocks = table.shallowCopy(snapshot._blocks)
 end
 
 

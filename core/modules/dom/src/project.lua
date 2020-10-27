@@ -16,7 +16,7 @@ end
 
 
 function Project.new(state, name, inherit)
-	local prj = State.select(state, { projects = name }, inherit)
+	local prj = State.select(state, 'projects', name, inherit)
 
 	prj.name = name
 	prj.filename = prj.filename or name

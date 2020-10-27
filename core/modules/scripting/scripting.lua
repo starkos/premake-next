@@ -7,20 +7,20 @@ local scripting = {}
 local _store = premake.store()
 
 
-local function _setField(field, ...)
-	Store.addValue(_store, field.name, ...)
-end
-
-
 local function _addField(field)
 	_G[field.name] = function(...)
-		_setField(field, ...)
+		Store.addValue(_store, field.name, ...)
+	end
+
+	 _G['remove' .. string.capitalize(field.name)] = function(...)
+		Store.removeValue(_store, field.name, ...)
 	end
 end
 
 
 local function _removeField(field)
 	_G[field.name] = nil
+	_G['remove' .. string.capitalize(field.name)] = nil
 end
 
 
@@ -55,8 +55,8 @@ end
 
 function project(name, fn)
 	projects(name)
-	when({ projects = name}, function()
-		baseDir (_SCRIPT_DIR)
+	when({ projects = name }, function()
+		baseDir(_SCRIPT_DIR)
 		if fn ~= nil then
 			fn()
 		end
@@ -67,7 +67,7 @@ end
 function workspace(name, fn)
 	workspaces(name)
 	when({ workspaces = name }, function()
-		baseDir (_SCRIPT_DIR)
+		baseDir(_SCRIPT_DIR)
 		if fn ~= nil then
 			fn()
 		end

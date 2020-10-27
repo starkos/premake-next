@@ -11,80 +11,101 @@ function StateScopeTests.setup()
 end
 
 
-
 ---
--- When conditions are nested, their clauses should be combined. All clauses
--- should be met to access values.
+-- Sanity test: testing top-level scopes with no environment
 ---
 
-function StateScopeTests.get_includesNestedBlock_whenCombinedConditionsMet()
+function StateScopeTests.returnsValue_onScopeMet()
 	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', 'WORKSPACE')
 
-		:pushCondition({ projects = 'Project1' })
-		:addValue('defines', 'PROJECT')
+	local state = State.new(store)
+		:select('workspaces', 'Workspace1')
 
-	local state = State.new(store, { workspaces = 'Workspace1', projects = 'Project1' })
-	test.isEqual({ 'WORKSPACE', 'PROJECT' }, state:get('defines'))
+	test.isEqual({ 'WORKSPACE' }, state:get('defines'))
 end
 
-
-function StateScopeTests.get_excludesNestedBlock_whenCombinedConditionsNotMet()
+function StateScopeTests.returnsNil_onScopeNotMet()
 	store
-		:pushCondition({ workspaces = 'Workspace1' })
+		:pushCondition({ workspaces = 'Workspace2' })
 		:addValue('defines', 'WORKSPACE')
 
-		:pushCondition({ projects = 'Project1' })
-		:addValue('defines', 'PROJECT')
+	local state = State.new(store)
+		:select('workspaces', 'Workspace1')
 
-	local state = State.new(store, { projects = 'Project1' })
 	test.isEqual({}, state:get('defines'))
 end
 
 
 ---
--- When `select()` is used pull out a specific scope, any values that fall
--- outside of that scope should not be included in the results.
+-- In order to be included, blocks must specifically test for the scope
 ---
 
-function StateScopeTests.select_limitsToSelectedScope_onTopLevelScopes()
+function StateScopeTests.returnsNil_onScopeNotTested()
 	store
-		:addValue('defines', 'GLOBAL')
+		:pushCondition({ system = 'Windows' })
+		:addValue('defines', 'SYSTEM')
 
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('defines', 'WORKSPACE')
-		:popCondition()
+	local state = State.new(store, { system = 'Windows' })
+		:select('workspaces', 'Workspace1')
 
-		:pushCondition({ projects = 'Project1' })
-		:addValue('defines', 'PROJECT')
-		:popCondition()
+	test.isEqual({}, state:get('defines'))
+end
 
-		:pushCondition({ configurations = 'Debug' })
-		:addValue('defines', 'DEBUG"')
+function StateScopeTests.excludesGlobalValues_onScopeNotTested()
+	store
+		:addValue('defines', 'SYSTEM')
 
-	local workspace = State.new(store)
-		:select({ workspaces = 'Workspace1' })
+	local state = State.new(store, { system = 'Windows' })
+		:select('workspaces', 'Workspace1')
 
-	test.isEqual({ 'WORKSPACE' }, workspace:get('defines'))
+	test.isEqual({}, state:get('defines'))
 end
 
 
-function StateScopeTests.select_limitsToSelectedScope_onNestedScopes()
-	store
-		:addValue('defines', 'GLOBAL')
+---
+-- When scopes are nested, all levels must be matched
+---
 
+function StateScopeTests.returnsValue_onNestedScopesMatched()
+	store
 		:pushCondition({ workspaces = 'Workspace1' })
 		:addValue('defines', 'WORKSPACE')
-
 		:pushCondition({ projects = 'Project1' })
 		:addValue('defines', 'PROJECT')
 
-		:pushCondition({ configurations = 'Debug' })
-		:addValue('defines', 'DEBUG"')
+	local state = State.new(store)
+		:select('workspaces', 'Workspace1')
+		:select('projects', 'Project1')
 
-	local workspace = State.new(store)
-		:select({ workspaces = 'Workspace1' })
+	test.isEqual({ 'PROJECT' }, state:get('defines'))
+end
 
-	test.isEqual({ 'WORKSPACE' }, workspace:get('defines'))
+function StateScopeTests.returnsNil_onOuterScopeMismatch()
+	store
+		:pushCondition({ workspaces = 'Workspace1' })
+		:addValue('defines', 'WORKSPACE')
+		:pushCondition({ projects = 'Project1' })
+		:addValue('defines', 'PROJECT')
+
+	local state = State.new(store)
+		:select('workspaces', 'Workspace2')
+		:select('projects', 'Project1')
+
+	test.isEqual({}, state:get('defines'))
+end
+
+function StateScopeTests.returnsNil_onInnerScopeMismatch()
+	store
+		:pushCondition({ workspaces = 'Workspace1' })
+		:addValue('defines', 'WORKSPACE')
+		:pushCondition({ projects = 'Project1' })
+		:addValue('defines', 'PROJECT')
+
+	local state = State.new(store)
+		:select('workspaces', 'Workspace1')
+		:select('projects', 'Project2')
+
+	test.isEqual({}, state:get('defines'))
 end
