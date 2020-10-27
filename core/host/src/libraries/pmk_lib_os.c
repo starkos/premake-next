@@ -98,3 +98,19 @@ int pmk_os_mkdir(lua_State* L)
 	lua_pushboolean(L, TRUE);
 	return (1);
 }
+
+
+int pmk_os_uuid(lua_State* L)
+{
+	char uuid[38];
+
+	const char* value = luaL_optstring(L, 1, NULL);
+	if (pmk_uuid(uuid, value)) {
+		lua_pushstring(L, uuid);
+		return (1);
+	} else {
+		lua_pushnil(L);
+		lua_pushstring(L, "failed to create UUID");
+		return (2);
+	}
+}
