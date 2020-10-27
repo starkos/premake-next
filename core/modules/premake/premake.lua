@@ -2,6 +2,7 @@
 -- Premake helper APIs.
 ---
 
+local export = require('export')
 local State = require('state')
 local Store = require('store')
 
@@ -68,7 +69,7 @@ end
 
 
 function premake.export(obj, exportPath, exporter)
-	local contents = io.capture(function ()
+	local contents = export.capture(function ()
 		exporter(obj)
 	end)
 

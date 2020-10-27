@@ -3,6 +3,7 @@
 ---
 
 local Callback = require('callback')
+local export = require('export')
 local options = require('options')
 local path = require('path')
 local premake = require('premake')
@@ -195,7 +196,7 @@ function testing.runIndividualTest(suiteName, testName)
 	local ok, err = testing.runSuiteSetup(suiteName)
 
 	if ok then
-		io.capture(function()
+		export.capture(function()
 			local suite = _suites[suiteName]
 			ok, err = Callback.call(suite._runner, suite[testName])
 		end)
@@ -231,7 +232,7 @@ function testing._testRunner(suiteName, testName)
 
 	if ok then
 		local suite = _suites[suiteName]
-		io.capture(function()
+		export.capture(function()
 			ok, err = xpcall(suite[testName], _failureHandler)
 		end)
 	end

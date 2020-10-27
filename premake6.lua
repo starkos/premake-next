@@ -5,11 +5,10 @@
 
 register('testing')
 
-local premake = require('premake')
+workspace('MyWorkspace', function()
 
-premake.store()
-	:addValue('workspaces', 'MyWorkspace')
+	project('MyProject', function()
 
-	:pushCondition({ workspaces = 'MyWorkspace' })
-	:addValue('projects', 'MyProject')
-	:popCondition()
+	end)
+
+end)

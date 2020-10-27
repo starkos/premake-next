@@ -77,7 +77,7 @@ Documentation is now stored in a `docs/` folder in the main repository. This all
 
 - `premake.workspace`, `project`, and `config` have been moved to a new `dom` module
 
-- I/O functions (`capture`, `w`, `eol`, etc.) have been moved to the `io` library
+- Export-related functions (`capture`, `w`, `eol`, etc.) have been moved to the `export` module
 
 #### table
 
