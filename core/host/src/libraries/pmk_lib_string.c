@@ -17,6 +17,15 @@ int pmk_string_contains(lua_State* L)
 }
 
 
+int pmk_string_hash(lua_State* L)
+{
+	const char* value = luaL_checkstring(L, 1);
+	int seed = luaL_optinteger(L, 2, 0);
+	lua_pushinteger(L, pmk_hash(value, seed));
+	return (1);
+}
+
+
 int pmk_string_patternFromWildcards(lua_State* L)
 {
 	char buffer[PATH_MAX];

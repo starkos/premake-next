@@ -80,6 +80,7 @@ void pmk_bufferPuts(pmk_Buffer* b, const char* ptr, size_t len);
 int  pmk_chdir(const char* path);
 int  pmk_compareFile(const char* path, const char* contents);
 int  pmk_doFile(lua_State* L, const char* filename);
+void pmk_escapeXml(char* result, const char* value);
 void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
 void pmk_getDirectory(char* result, const char* value);
@@ -88,6 +89,7 @@ int  pmk_getFileName(char* result, const char* path);
 int  pmk_getRelativeFile(char* result, const char* baseFile, const char* targetFile);
 int  pmk_getRelativePath(char* result, const char* basePath, const char* targetPath);
 int  pmk_getTextColor();
+uint32_t pmk_hash(const char* value, int seed);
 int  pmk_isAbsolutePath(const char* path);
 int  pmk_isFile(const char* filename);
 void pmk_joinPath(char* root, const char* segment);
@@ -112,6 +114,7 @@ int  pmk_pcall(lua_State* L, int nargs, int nresults);
 const char** pmk_searchPaths(lua_State* L);
 void pmk_translatePath(char* result, const char* value, const char separator);
 void pmk_translatePathInPlace(char* value, const char sep);
+int  pmk_uuid(char* result, const char* value);
 int  pmk_writeFile(const char* path, const char* contents);
 
 /* Global extensions */
@@ -126,7 +129,7 @@ int g_loadFileOpt(lua_State* L);
 int pmk_io_compareFile(lua_State* L);
 int pmk_io_writeFile(lua_State* L);
 
-/* Buffer library functions */
+/* String buffer library extensions */
 
 int pmk_buffer_new(lua_State* L);
 int pmk_buffer_close(lua_State* L);
@@ -144,6 +147,7 @@ int pmk_os_matchName(lua_State* L);
 int pmk_os_matchNext(lua_State* L);
 int pmk_os_matchStart(lua_State* L);
 int pmk_os_mkdir(lua_State* L);
+int pmk_os_uuid(lua_State* L);
 
 /* Path library functions */
 
@@ -167,9 +171,14 @@ int pmk_premake_locateScript(lua_State* L);
 /* String library extensions */
 
 int pmk_string_contains(lua_State* L);
+int pmk_string_hash(lua_State* L);
 int pmk_string_patternFromWildcards(lua_State* L);
 int pmk_string_startsWith(lua_State* L);
 
-/* Terminal library functions */
+/* Terminal output library functions */
 
 int pmk_terminal_textColor(lua_State* L);
+
+/* XML library functions */
+
+int pmk_xml_escape(lua_State* L);

@@ -49,6 +49,7 @@ static const luaL_Reg os_functions[] = {
 	{ "matchNext", pmk_os_matchNext },
 	{ "matchStart", pmk_os_matchStart },
 	{ "mkdir", pmk_os_mkdir },
+	{ "uuid", pmk_os_uuid },
 	{ NULL, NULL }
 };
 
@@ -74,14 +75,20 @@ static const luaL_Reg premake_functions[] = {
 };
 
 static const luaL_Reg string_functions[] = {
-	{ "contains", pmk_string_contains},
-	{ "patternFromWildcards", pmk_string_patternFromWildcards},
+	{ "contains", pmk_string_contains },
+	{ "hash", pmk_string_hash },
+	{ "patternFromWildcards", pmk_string_patternFromWildcards },
 	{ "startsWith", pmk_string_startsWith },
 	{ NULL, NULL }
 };
 
 static const luaL_Reg terminal_functions[] = {
 	{ "textColor", pmk_terminal_textColor },
+	{ NULL, NULL }
+};
+
+static const luaL_Reg xml_functions[] = {
+	{ "escape", pmk_xml_escape },
 	{ NULL, NULL }
 };
 
@@ -122,6 +129,7 @@ pmk_State* pmk_init(pmk_ErrorHandler onError)
 	registerInternalLibrary(L, "path", path_functions);
 	registerInternalLibrary(L, "premake", premake_functions);
 	registerInternalLibrary(L, "terminal", terminal_functions);
+	registerInternalLibrary(L, "xml", xml_functions);
 
 	/* Install Premake's module locator */
 	installModuleLoader(L);
