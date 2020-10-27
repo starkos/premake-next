@@ -2,11 +2,13 @@
 -- Unit testing framework assertion library
 ---
 
+local export = require('export')
+
 local testing = select(1, ...)
 
 
 function testing.capture(expected)
-	local actual = io.captured() .. '\n'
+	local actual = export.captured() .. '\n'
 
 	-- create line-by-line iterators for both values
 	local iActual = actual:gmatch("(.-)" .. '\n')

@@ -1,6 +1,9 @@
+local export = require('export')
 local path = require('path')
 
 local vcxproj = {}
+
+local wl = export.writeln
 
 
 function vcxproj.filename(prj)
@@ -10,13 +13,13 @@ end
 
 function vcxproj.export(prj)
 	vcxproj.header()
-	io.writeln('<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">')
-	io.write('</Project>')
+	wl('<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">')
+	export.write('</Project>')
 end
 
 
 function vcxproj.header()
-	io.writeln('<?xml version="1.0" encoding="utf-8"?>')
+	wl('<?xml version="1.0" encoding="utf-8"?>')
 end
 
 
