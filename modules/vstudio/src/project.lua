@@ -7,6 +7,7 @@ local project = {}
 
 function project.prepare(prj)
 	prj.exportPath = vstudio.vcxproj.filename(prj)
+	prj.uuid = prj.uuid or os.uuid(prj.name)
 end
 
 
