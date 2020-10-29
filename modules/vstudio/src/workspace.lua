@@ -1,4 +1,5 @@
 local premake = require('premake')
+local path = require('path')
 
 local vstudio = select(1, ...)
 
