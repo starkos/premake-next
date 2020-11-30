@@ -11,8 +11,8 @@ function testing.capture(expected)
 	local actual = export.captured() .. '\n'
 
 	-- create line-by-line iterators for both values
-	local iActual = actual:gmatch("(.-)" .. '\n')
-	local iExpect = expected:gmatch("(.-)\n")
+	local iActual = actual:gmatch('(.-)\n')
+	local iExpect = expected:gmatch('(.-)\n')
 
 	-- compare each value line by line
 	local lineNum = 1
@@ -20,7 +20,7 @@ function testing.capture(expected)
 	local expectLine = iExpect()
 	while expectLine do
 		if expectLine ~= actualLine then
-			testing.fail("(%d) expected:\n%s\n...but was:\n%s\nfulltext:\n%s", lineNum, expectLine, actualLine, actual)
+			testing.fail('(%d) expected:\n%s\n...but was:\n%s', lineNum, expectLine, actualLine)
 		end
 
 		lineNum = lineNum + 1
