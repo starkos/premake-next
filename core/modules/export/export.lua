@@ -72,7 +72,7 @@ end
 
 local function _write(...)
 	if _captureBuffer == nil then
-		error('nos active capture', 0)
+		error('no active capture', 0)
 	end
 
 	if select('#', ...) > 0 then
@@ -87,7 +87,7 @@ export.write = _write
 
 function export.writeln(...)
 	_write(...)
-	_write(_eol)
+	Buffer.write(_captureBuffer, _eol)
 end
 
 
