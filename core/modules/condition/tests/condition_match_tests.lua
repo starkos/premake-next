@@ -1,6 +1,12 @@
 local Condition = require('condition')
+local Field = require('field')
 
 local ConditionMatchTests = test.declare('ConditionMatchTests', 'condition')
+
+local _DEFINES = Field.get('defines')
+local _KIND = Field.get('kind')
+local _PROJECTS = Field.get('projects')
+local _WORKSPACES = Field.get('workspaces')
 
 
 ---
@@ -26,7 +32,7 @@ function ConditionMatchTests.scopeField_matches_onMatchingScope()
 
 	test.isTrue(cond:matchesValues(
 		{},
-		{ workspaces = {'Workspace1'} }
+		{ [_WORKSPACES] = {'Workspace1'} }
 	))
 end
 
@@ -36,7 +42,7 @@ function ConditionMatchTests.scopeField_fails_onNoMatchingScope()
 
 	test.isFalse(cond:matchesValues(
 		{},
-		{ workspaces = {'Workspace2'} }
+		{ [_WORKSPACES] = {'Workspace2'} }
 	))
 end
 
@@ -45,8 +51,8 @@ function ConditionMatchTests.scopeField_fails_onMatchingValueOnly()
 	local cond = Condition.new({ projects = 'Project1' })
 
 	test.isFalse(cond:matchesValues(
-		{ projects = {'Project1'} },
-		{ workspaces = {'Workspace1'} }
+		{ [_PROJECTS] = {'Project1'} },
+		{ [_WORKSPACES] = {'Workspace1'} }
 	))
 end
 
@@ -59,7 +65,7 @@ function ConditionMatchTests.valueField_matches_onMatchingValue()
 	local cond = Condition.new({ defines = 'X' })
 
 	test.isTrue(cond:matchesValues(
-		{ defines = {'X'} },
+		{ [_DEFINES] = {'X'} },
 		{}
 	))
 end
@@ -69,7 +75,7 @@ function ConditionMatchTests.valueField_matches_onExtraValues()
 	local cond = Condition.new({ defines = 'X' })
 
 	test.isTrue(cond:matchesValues(
-		{ defines = {'X'}, kind = 'StaticLib' },
+		{ [_DEFINES] = {'X'}, [_KIND] = 'StaticLib' },
 		{}
 	))
 end
@@ -79,7 +85,7 @@ function ConditionMatchTests.valueField_matches_onMultipleMatches()
 	local cond = Condition.new({ defines = 'X', kind = 'StaticLib' })
 
 	test.isTrue(cond:matchesValues(
-		{ defines = {'X'}, kind = 'StaticLib' },
+		{ [_DEFINES] = {'X'}, [_KIND] = 'StaticLib' },
 		{}
 	))
 end
@@ -89,7 +95,7 @@ function ConditionMatchTests.valueField_fails_onNoMatch()
 	local cond = Condition.new({ defines = 'X' })
 
 	test.isFalse(cond:matchesValues(
-		{ defines = {'A'} },
+		{ [_DEFINES] = {'A'} },
 		{}
 	))
 end
@@ -99,7 +105,7 @@ function ConditionMatchTests.valueField_fails_onPartialMatch()
 	local cond = Condition.new({ defines = 'X', kind = 'StaticLib' })
 
 	test.isFalse(cond:matchesValues(
-		{ defines = {'A'}, kind = 'StaticLib' },
+		{ [_DEFINES] = {'A'}, [_KIND] = 'StaticLib' },
 		{}
 	))
 end
@@ -109,8 +115,8 @@ function ConditionMatchTests.valueField_fails_onScopeOnlyMatch()
 	local cond = Condition.new({ defines = 'X' })
 
 	test.isFalse(cond:matchesValues(
-		{ kind = 'StaticLib' },
-		{ defines = {'X'} }
+		{ [_KIND] = 'StaticLib' },
+		{ [_DEFINES] = {'X'} }
 	))
 end
 

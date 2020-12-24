@@ -8,7 +8,7 @@ local workspace = {}
 
 
 function workspace.extract(state, name)
-	local wks = Dom.Workspace.new(name, state:select({ workspaces = name }))
+	local wks = Dom.Workspace.new(state:select({ workspaces = name }))
 	wks.global = state
 	wks.exportPath = vstudio.sln.filename(wks)
 

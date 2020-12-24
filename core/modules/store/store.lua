@@ -4,11 +4,58 @@
 -- exporters.
 ---
 
-local Store = declareType('Store')
-
 local Block = require('block')
 local Condition = require('condition')
 local Stack = require('stack')
+
+local Store = declareType('Store')
+
+
+---
+-- Adds new block to the end of the store's list of blocks.
+---
+
+local function _appendBlock(self, operation)
+	local block = table.last(self._blocks)
+	local condition = Stack.top(self._conditions)
+
+	-- Check to see if the current block was actually used. If not, reuse it
+	if block ~= nil and block.operation == Block.NONE then
+		block.operation = operation
+		block.condition = condition
+	else
+		block = Block.new(operation, condition)
+		table.insert(self._blocks, block)
+	end
+
+	return block
+end
+
+
+---
+-- Stores values into a block.
+--
+-- @param operation
+--    One of ADD or REMOVE, indicating whether the intended operation is to store new values
+--    in the settings (e.g. `defines 'A'`) or remove existing values (`removeDefines 'A'`).
+-- @param field
+--    The field being stored.
+-- @param value
+--    The value to be added to the field's contents.
+---
+
+function _applyValueOperation(self, operation, field, value)
+	local block = table.last(self._blocks)
+
+	-- If the current block is targeting the same operation (ADD or REMOVE), I can just push
+	-- this new value into it. If it is a different operation I have to create a new block
+	if block.operation ~= operation and block.operation ~= Block.NONE then
+		block = _appendBlock(self, operation)
+	end
+
+	block.operation = operation
+	Block.store(block, field, value)
+end
 
 
 ---
@@ -20,10 +67,14 @@ local Stack = require('stack')
 
 function Store.new()
 	-- if new fields are added here, update `snapshot()` and `restore()` too
-	return instantiateType(Store, {
+	local newStore = instantiateType(Store, {
 		_conditions = Stack.new({ Condition.new(_EMPTY) }),
 		_blocks = {}
 	})
+
+	_appendBlock(newStore, _EMPTY, Block.NONE)
+
+	return newStore
 end
 
 
@@ -55,7 +106,7 @@ function Store.pushCondition(self, clauses)
 	end
 
 	Stack.push(conditions, condition)
-	Store._newBlock(self, Block.ADD)
+	_appendBlock(self, Block.NONE)
 
 	return self
 end
@@ -67,7 +118,7 @@ end
 
 function Store.popCondition(self)
 	Stack.pop(self._conditions)
-	Store._newBlock(self, Block.ADD)
+	_appendBlock(self, Block.NONE)
 	return self
 end
 
@@ -76,8 +127,8 @@ end
 -- Adds a value or values to the current configuration.
 ---
 
-function Store.addValue(self, fieldName, value)
-	Store._applyValueOperation(self, Block.ADD, fieldName, value)
+function Store.addValue(self, field, value)
+	_applyValueOperation(self, Block.ADD, field, value)
 	return self
 end
 
@@ -86,8 +137,8 @@ end
 -- Flags one or more values for removal from the current configuration.
 ---
 
-function Store.removeValue(self, fieldName, value)
-	Store._applyValueOperation(self, Block.REMOVE, fieldName, value)
+function Store.removeValue(self, field, value)
+	_applyValueOperation(self, Block.REMOVE, field, value)
 	return self
 end
 
@@ -117,33 +168,6 @@ end
 function Store.rollback(self, snapshot)
 	self._conditions = table.shallowCopy(snapshot._conditions)
 	self._blocks = table.shallowCopy(snapshot._blocks)
-end
-
-
----
--- Store values to be added or removed from a configuration, creating a new block if needed.
----
-
-function Store._applyValueOperation(self, operation, fieldName, value)
-	local block = table.last(self._blocks)
-
-	if not Block.acceptsOperation(block, operation) then
-		block = Store._newBlock(self, operation)
-	end
-
-	Block.store(block, fieldName, value)
-end
-
-
----
--- Add a new block to the block list and return it.
----
-
-function Store._newBlock(self, operation)
-	local condition = Stack.top(self._conditions)
-	local block = Block.new(operation, condition, _SCRIPT_DIR)
-	table.insert(self._blocks, block)
-	return block
 end
 
 

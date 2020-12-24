@@ -7,7 +7,7 @@ local project = {}
 
 
 function project.extract(wks, name)
-	local prj = Dom.Project.new(name, wks:select({ projects = name })
+	local prj = Dom.Project.new(wks:select({ projects = name })
 		:include(wks.global)
 		:withInheritance())
 

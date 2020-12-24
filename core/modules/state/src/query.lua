@@ -6,11 +6,11 @@ local Store = require('store')
 local Query = {}
 
 -- result values for  block tests
-local UNKNOWN = Block.NONE
 local ADD = Block.ADD
 local REMOVE = Block.REMOVE
 local IGNORE = 'IGNORE'
 local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
+local UNKNOWN = 'UNKNOWN'
 
 
 -- Enabling the debug statements is a big performance hit.
@@ -18,25 +18,47 @@ local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
 
 
 ---
--- Apply add/remove operations from a block to a value collection. This gets called
--- for each enabled block to accumulate a complete state.
---
--- TODO: Should only accumulate fields that are actually used by block conditions; the
---    other fields are just being ignored. Pull fields for removes too? Or just fetch
---    those on demand if/when needed?
+-- Aggregate values from a block into an existing value collection. Each time a new
+-- block gets enabled (its condition is tested and passed), this gets called to
+-- merge its contents into the accumulated value snaphot.
 ---
 
-local function _accumulateValuesFromBlock(values, block, operation)
-	for fieldName, value in pairs(block) do
-		if Field.exists(fieldName) then
-			local field = Field.get(fieldName)
+local function _accumulateValuesFromBlock(allFieldsTested, values, block, operation)
+	for field, value in pairs(block.data) do
+		-- we only care about fields that are used to satisfy block conditions; ignore others
+		if allFieldsTested[field] then
 			if operation == ADD then
-				values[fieldName] = Field.mergeValues(field, values[fieldName], value)
+				values[field] = Field.mergeValues(field, values[field], value)
 			else
-				values[fieldName] = Field.removeValues(field, values[fieldName], value)
+				values[field] = Field.removeValues(field, values[field], value)
 			end
 		end
 	end
+	return values
+end
+
+
+---
+-- Aggregate values for a specific field from the currently enabled blocks. Used
+-- by value removal logic.
+---
+
+local function _fetchFieldValue(field, blockResults)
+	local values = {}
+
+	for i = 1, #blockResults do
+		local blockResult = blockResults[i]
+		local value = blockResult.sourceBlock.data[field]
+		if value ~= nil then
+			local operation = blockResult.globalOperation
+			if operation == ADD then
+				values = Field.mergeValues(field, values, value)
+			elseif operation == REMOVE then
+				values = Field.removeValues(field, values, value)
+			end
+		end
+	end
+
 	return values
 end
 
@@ -75,20 +97,22 @@ function Query.evaluate(state)
 		table.insert(blockResults, {
 			targetOperation = UNKNOWN,
 			globalOperation = UNKNOWN,
-			data = sourceBlocks[i]
+			sourceBlock = sourceBlocks[i]
 		})
 	end
+
+	-- Optimization: only fields actually mentioned by block conditions are aggregated
+	local _allFieldsTested = Condition.allFieldsTested()
 
 	-- Set up to iterate the list of blocks multiple times. Each time new values are
 	-- added or removed from the target state, any blocks that had been previously skipped
 	-- over need to be rechecked to see if they have come into scope as a result.
-	-- TODO: Tracking which blocks depend on which fields might be an optimization opportunity
 
 	local i = 1
 
 	while i <= #blockResults do
 		local blockResult = blockResults[i]
-		local sourceBlock = blockResult.data
+		local sourceBlock = blockResult.sourceBlock
 
 		local targetOperation = blockResult.targetOperation
 		local globalOperation = blockResult.globalOperation
@@ -97,8 +121,8 @@ function Query.evaluate(state)
 		if globalOperation ~= UNKNOWN then
 			i = i + 1
 		else
-			local blockCondition = Block.condition(sourceBlock)
-			local blockOperation = Block.operation(sourceBlock)
+			local blockCondition = sourceBlock.condition
+			local blockOperation = sourceBlock.operation
 
 			-- _debug('----------------------------------------------------')
 			-- _debug('BLOCK #:', i)
@@ -173,31 +197,24 @@ function Query.evaluate(state)
 				-- just a simple add though: have to make sure I only add in values that might have actually been set.
 				-- Might have to deal with wildcard matches. Need to synthesize a new ADD block for this. Start by
 				-- excluding the current remove block from the target results.
-
 				blockResult.targetOperation = OUT_OF_SCOPE
 
 				-- Then build a new block and insert values that would be removed by the container
+				local newAddBlock = Block.new(Block.ADD, _EMPTY)
 
-				local newAddBlock = Block.new(Block.ADD, _EMPTY, Block.baseDir(sourceBlock))
+				for field, removePatterns in pairs(sourceBlock.data) do
+					local currentGlobalValues = _fetchFieldValue(field, blockResults)
 
-				for fieldName, removePatterns in pairs(sourceBlock) do
-					if Field.exists(fieldName) then
-						local field = Field.get(fieldName)
+					-- Run the remove patterns from the block against the currently set values and see what we get;
+					-- add back any removed values that aren't already in the local state.
+					local _, removedValues = Field.removeValues(field, currentGlobalValues, removePatterns)
+					local currentTargetValues = targetValues[field] or _EMPTY
 
-						-- Run the remove patterns from the block against the currently set values and see what we get;
-						-- add back any removed values that aren't already in the local state.
-						local valuesToAdd = {}
-						local _, removedValues = Field.removeValues(field, globalValues[fieldName], removePatterns)
-						local currentTargetValues = targetValues[fieldName] or {}
-						for i = 1, #removedValues do
-							local value = removedValues[i]
-							-- in this case, don't want to add duplicates even if the field would otherwise allow it
-							if not Field.matches(field, currentTargetValues, value) then
-								table.insert(valuesToAdd, value)
-							end
-						end
-						if #valuesToAdd > 0 then
-							newAddBlock[fieldName] = valuesToAdd
+					for i = 1, #removedValues do
+						local value = removedValues[i]
+						-- in this case, don't want to add duplicates even if the field would otherwise allow it
+						if not Field.matches(field, currentTargetValues, value) then
+							Block.store(newAddBlock, field, value)
 						end
 					end
 				end
@@ -207,19 +224,19 @@ function Query.evaluate(state)
 				table.insert(blockResults, i, {
 					targetOperation = ADD,
 					globalOperation = OUT_OF_SCOPE,
-					data = newAddBlock
+					sourceBlock = newAddBlock
 				})
 
-				targetValues = _accumulateValuesFromBlock(targetValues, newAddBlock, ADD)
+				targetValues = _accumulateValuesFromBlock(_allFieldsTested, targetValues, newAddBlock, ADD)
 
 			elseif targetOperation ~= UNKNOWN then
 				blockResult.targetOperation = targetOperation
-				targetValues = _accumulateValuesFromBlock(targetValues, sourceBlock, targetOperation)
+				targetValues = _accumulateValuesFromBlock(_allFieldsTested, targetValues, sourceBlock, targetOperation)
 			end
 
 			if globalOperation ~= UNKNOWN then
 				blockResult.globalOperation = globalOperation -- TODO: do I need to store this? Once values have been processed at the global scope I'm done?
-				globalValues = _accumulateValuesFromBlock(globalValues, sourceBlock, globalOperation)
+				globalValues = _accumulateValuesFromBlock(_allFieldsTested, globalValues, sourceBlock, globalOperation)
 			end
 
 			-- If accumulated state changed rerun previously skipped blocks to see if they should now be enabled
@@ -232,7 +249,19 @@ function Query.evaluate(state)
 		end
 	end
 
-	return blockResults
+	-- Create a new list of just the enabled blocks to return to the caller
+
+	local enabledBlocks = {}
+
+	for i = 1, #blockResults do
+		local blockResult = blockResults[i]
+		local operation = blockResult.targetOperation
+		if operation == ADD or operation == REMOVE then
+			table.insert(enabledBlocks, Block.new(operation, _EMPTY, blockResult.sourceBlock.data))
+		end
+	end
+
+	return enabledBlocks
 end
 
 

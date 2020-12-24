@@ -9,7 +9,7 @@ local _wks
 function DomWorkspaceTests.setup()
 	workspace('MyWorkspace')
 
-	_wks = Workspace.new('MyWorkspace', premake.newState():select({ workspaces = 'MyWorkspace' }))
+	_wks = Workspace.new(premake.newState():select({ workspaces = 'MyWorkspace' }))
 end
 
 

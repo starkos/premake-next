@@ -3,8 +3,10 @@ local State = require('state')
 local Project = declareType('Project', State)
 
 
-function Project.new(name, state)
+function Project.new(state)
 	local prj = instantiateType(Project, state)
+
+	local name = state.projects[1]
 
 	prj.name = name
 	prj.filename = prj.filename or name

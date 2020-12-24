@@ -187,11 +187,11 @@ end
 ---
 
 function Field.get(fieldName)
-	local fld = _registeredFields[fieldName]
-	if not fld then
+	local field = _registeredFields[fieldName]
+	if not field then
 		error(string.format('No such field `%s`', fieldName), 2)
 	end
-	return fld
+	return field
 end
 
 

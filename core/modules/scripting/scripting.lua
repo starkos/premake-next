@@ -9,11 +9,11 @@ local _store = premake.store()
 
 local function _addField(field)
 	_G[field.name] = function(...)
-		Store.addValue(_store, field.name, ...)
+		Store.addValue(_store, field, ...)
 	end
 
 	 _G['remove' .. string.capitalize(field.name)] = function(...)
-		Store.removeValue(_store, field.name, ...)
+		Store.removeValue(_store, field, ...)
 	end
 end
 
