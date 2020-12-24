@@ -1,3 +1,4 @@
+local Dom = require('dom')
 local premake = require('premake')
 
 local vstudio = select(1, ...)
@@ -5,9 +6,16 @@ local vstudio = select(1, ...)
 local project = {}
 
 
-function project.prepare(prj)
+function project.extract(wks, name)
+	local prj = Dom.Project.new(name, wks:select({ projects = name })
+		:include(wks.global)
+		:withInheritance())
+
+	prj.workspace = wks
 	prj.exportPath = vstudio.vcxproj.filename(prj)
 	prj.uuid = prj.uuid or os.uuid(prj.name)
+
+	return prj
 end
 
 

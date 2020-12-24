@@ -1,4 +1,3 @@
-local Dom = require('dom')
 local premake = require('premake')
 local State = require('state')
 
@@ -63,25 +62,15 @@ end
 ---
 
 function vstudio.extractWorkspaces()
-	local state = premake.select({
+	local state = premake.newState({
 		action = 'vstudio',
 		version = version
 	})
 
-	local workspaces = Dom.Workspace.extractAll(state, State.INHERIT)
-
-	for wi = 1, #workspaces do
-		local wks = workspaces[wi]
-		vstudio.workspace.prepare(wks)
-
-		local projects = Dom.Project.extractAll(wks, State.INHERIT)
-
-		for pi = 1, #projects do
-			local prj = projects[pi]
-			vstudio.project.prepare(prj)
-		end
-
-		wks.projects = projects
+	local workspaces = {}
+	local names = state.workspaces
+	for i = 1, #names do
+		workspaces[i] = vstudio.workspace.extract(state, names[i])
 	end
 
 	return workspaces
@@ -94,7 +83,6 @@ end
 
 function vstudio.exportWorkspace(wks)
 	vstudio.workspace.export(wks)
-
 	local projects = wks.projects
 	for i = 1, #projects do
 		vstudio.project.export(projects[i])

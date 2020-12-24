@@ -12,12 +12,14 @@ local Field = require('field')
 
 local Condition = declareType('Condition')
 
-local OP_TEST = 'TEST'
+Condition.NIL_MATCHES_ANY = true
+Condition.NIL_MATCHES_NONE = false
+
+
+local OP_MATCH = 'MATCH'
 local OP_AND = 'AND'
 local OP_OR = 'OR'
 local OP_NOT = 'NOT'
-
-local ALLOW_NIL = true
 
 
 ---
@@ -53,12 +55,12 @@ end
 -- of values and scopes.
 ---
 
-local function _match(operation, values, scope, allowNil)
+local function _match(operation, values, scope, matchOnNil)
 	local result
 
 	local op = operation._op
 
-	if op == OP_TEST then
+	if op == OP_MATCH then
 
 		local fieldName = operation[1]
 		local pattern = operation[2]
@@ -74,13 +76,13 @@ local function _match(operation, values, scope, allowNil)
 		if testValue then
 			result = Field.matches(field, testValue, pattern, true)
 		else
-			result = allowNil
+			result = matchOnNil
 		end
 
 	elseif op == OP_AND then
 
 		for i = 1, #operation do
-			if not _match(operation[i], values, scope, allowNil) then
+			if not _match(operation[i], values, scope, matchOnNil) then
 				return false
 			end
 		end
@@ -88,12 +90,12 @@ local function _match(operation, values, scope, allowNil)
 
 	elseif op == OP_NOT then
 
-		return not _match(operation[1], values, scope, allowNil)
+		return not _match(operation[1], values, scope, matchOnNil)
 
 	elseif op == OP_OR then
 
 		for i = 1, #operation do
-			if _match(operation[i], values, scope, allowNil) then
+			if _match(operation[i], values, scope, matchOnNil) then
 				return true
 			end
 		end
@@ -106,35 +108,69 @@ end
 
 
 ---
--- Returns `true` if every clause in the condition has a passing value in `values`,
--- or no value (`nil`). Returns `false` if `values` contains an non-nil value which
--- fails one of the clauses.
+-- Compares this condition to a list of scopes, and a collection of values.
+--
+-- @param values
+--    A collection of key-value pairs representing the values to be tested against. Used
+--   for fields which do not have the `isScope` flag set.
+-- @param scope
+--   A list of tables of key-value pairs representing the active query scopes. The list
+--   will be iterated, and each scope tested in turn. In order to pass, the condition
+--   must contain corresponding clauses which test all keys in the scope, and all clauses
+--   in the condition must match the provided values. Fields with the `isScope` flag set
+--   will be tested against the scope currently under test.
+-- @param matchOnNil
+--    If `NIL_MATCHES_ANY` (true), a `nil` value in `scope` or `values` is treated like
+--    a wildcard which will match any value. If `NIL_MATCHES_NONE`, `nil` is treat normally,
+--    like a missing value which fails testing.
+-- @returns
+--   If a match is found in the list of scopes, and the values pass the condition, returns
+--   the index of the matched scope. If no match is found, returns `nil`.
 ---
 
-function Condition.isNotFailedBy(self, values)
-	local ok, result = pcall(_match, self._rootTest, values, scope, ALLOW_NIL)
+function Condition.matchesScopeAndValues(self, values, scopes, matchOnNil)
+	local fieldsTested = self._fieldsTested
 
-	if not ok then
-		error(result, 2)
+	for i = 1, #scopes do
+		local scope = scopes[i]
+
+		local isScopeMatch = true
+		for key in pairs(scope) do
+			if not fieldsTested[key] then
+				isScopeMatch = false
+			end
+		end
+
+		if isScopeMatch and Condition.matchesValues(self, values, scope, matchOnNil) then
+			return i
+		end
 	end
 
-	return result
+	return nil
 end
 
 
 ---
--- Test a condition against a specific collection of values.
+-- Test a condition against a set of values, without enforcing scoping rules.
+--
+-- Unlike the other matchers, `matchesValues()` only checks to see if its expression is met
+-- by the provided values. It does not check to see if the fields required by the scope
+-- are actually checked by the condition.
 --
 -- @param values
---    A collection of field-value pairs to be tested against.
+--    A collection of key-value pairs representing the values to be tested against. Used
+--   for fields which do not have the `isScope` flag set.
 -- @param scope
---    An optional key-value collection of scope names and values. If provided, the
---    condition will only pass if any scope fields tested by the condition have an
---    exact match in this collections.
+--   A collection of key-value pairs representing the current query scope. Fields with
+--   the `isScope` flag set will be tested against this collection, rather than the values.
+-- @param matchOnNil
+--    If `NIL_MATCHES_ANY` (true), a `nil` value in `scope` or `values` is treated like
+--    a wildcard which will match any value. If `NIL_MATCHES_NONE`, `nil` is treat normally,
+--    like a missing value which fails testing.
 ---
 
-function Condition.matches(self, values, scope)
-	local ok, result = pcall(_match, self._rootTest, values, scope)
+function Condition.matchesValues(self, values, scope, matchOnNil)
+	local ok, result = pcall(_match, self._rootTest, values, scope, matchOnNil)
 
 	if not ok then
 		error(result, 2)
@@ -148,31 +184,15 @@ end
 -- Merges conditions by AND-ing all of the clauses together.
 ---
 
-function Condition.merge(outer, inner)
-	local fieldsTested = table.mergeKeys(outer._fieldsTested, inner._fieldsTested)
-	local rootTest = table.joinArrays(outer._rootTest, inner._rootTest)
+function Condition.merge(left, right)
+	local fieldsTested = table.mergeKeys(left._fieldsTested, right._fieldsTested)
+	local rootTest = table.joinArrays(left._rootTest, right._rootTest)
 	rootTest._op = OP_AND
 
 	return instantiateType(Condition, {
 		_fieldsTested = fieldsTested,
 		_rootTest = rootTest
 	})
-end
-
-
----
--- Checks to see if a condition contains clauses to test all of the keys in the
--- provided list of fields. If any key is present in `fields` which can't be matched
--- to a corresponding clause in the condition, the test fails and returns `false`.
----
-
-function Condition.testsAllKeys(self, fields)
-	for fieldName in pairs(fields) do
-		if not self._fieldsTested[fieldName] then
-			return false
-		end
-	end
-	return true
 end
 
 
@@ -216,7 +236,7 @@ function Condition._parseClause(self, defaultFieldName, fieldName, pattern)
 
 	-- we've reduced it to a simple 'key=value' test
 	self._fieldsTested[fieldName] = true
-	return { _op = OP_TEST, fieldName, pattern }
+	return { _op = OP_MATCH, fieldName, pattern }
 end
 
 
@@ -230,7 +250,7 @@ function Condition._parseFieldName(self, defaultFieldName, pattern, shouldNegate
 	end
 
 	if fieldName == nil then
-		error('No field name specified for condition "' .. pattern .. "'", 0)
+		error('No field name specified for condition "' .. pattern .. '"', 0)
 	end
 
 	if shouldNegate then
@@ -259,56 +279,6 @@ function Condition._parseOrOperators(self, defaultFieldName, patterns)
 	end
 
 	return tests
-end
-
-
----
--- Evaluate a test tree.
----
-
-function Condition._test(operation, values, allowNil)
-	local result
-
-	local op = operation._op
-
-	if op == OP_TEST then
-
-		local fieldName = operation[1]
-		local pattern = operation[2]
-		local testValue = values[fieldName]
-
-		if not testValue then
-			result = allowNil
-		else
-			local field = Field.get(fieldName)
-			result = Field.matches(field, testValue, pattern, true)
-		end
-
-	elseif op == OP_AND then
-
-		for i = 1, #operation do
-			if not Condition._test(operation[i], values, allowNil) then
-				return false
-			end
-		end
-		return true
-
-	elseif op == OP_NOT then
-
-		return not Condition._test(operation[1], values, allowNil)
-
-	elseif op == OP_OR then
-
-		for i = 1, #operation do
-			if Condition._test(operation[i], values, allowNil) then
-				return true
-			end
-		end
-		return false
-
-	end
-
-	return result
 end
 
 

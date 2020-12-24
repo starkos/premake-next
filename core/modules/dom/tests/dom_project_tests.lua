@@ -4,22 +4,25 @@ local Project = require('dom').Project
 local DomProjectTests = test.declare('DomProjectTests', 'dom')
 
 
-function DomProjectTests.new_setsName()
+local _prj
+
+function DomProjectTests.setup()
 	project('MyProject')
-	local prj = Project.new(premake.select(), 'MyProject')
-	test.isEqual('MyProject', prj.name)
+
+	_prj = Project.new('MyProject', premake.newState():select({ projects = 'MyProject' }))
+end
+
+
+function DomProjectTests.new_setsName()
+	test.isEqual('MyProject', _prj.name)
 end
 
 
 function DomProjectTests.new_setsFilename()
-	project('MyProject')
-	local prj = Project.new(premake.select(), 'MyProject')
-	test.isEqual('MyProject', prj.filename)
+	test.isEqual('MyProject', _prj.filename)
 end
 
 
 function DomProjectTests.new_setsLocation()
-	project('MyProject')
-	local prj = Project.new(premake.select(), 'MyProject')
-	test.isEqual(_SCRIPT_DIR, prj.location)
+	test.isEqual(_SCRIPT_DIR, _prj.location)
 end

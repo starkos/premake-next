@@ -79,8 +79,8 @@ function premake.export(obj, exportPath, exporter)
 end
 
 
-function premake.select(env)
-	return State.new(_store, table.mergeKeys(_env, env))
+function premake.newState(initialState)
+	return State.new(_store, _env, initialState)
 end
 
 

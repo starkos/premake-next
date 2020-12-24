@@ -1,277 +1,468 @@
+local premake = require('premake')
 local Store = require('store')
 local State = require('state')
 
-local StateRemoveTests = test.declare('StateRemoveTests', 'state')
+local StateRemoveTests = test.declare('StateRemoveTests', 'state2')
 
 
-local store
+local _global
 
 function StateRemoveTests.setup()
-	store = Store.new()
+	_global = State.new(premake.store())
 end
 
 
 ---
--- When a value is defined at a broader scope, like a workspace, and then removed
--- from a narrower scope, like a project, the value must not appear in query results
--- for broader scope. Since most toolsets only support additive configuration, once
--- the define gets exported to the workspace there would be no way to remove it at
--- the project level. The only way to make this work is to _not_ export the value
--- value at the workspace, and instead move it to those narrower scopes where it
--- it was _not_ removed, and should still be applied.
+-- Value is added and removed at the same scope.
 ---
 
-function StateRemoveTests.removedByWorkspace_shouldRemoveFromWorkspace()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
+function StateRemoveTests.globalAdds_globalRemoves()
+	defines { 'A', 'B', 'C' }
+	removeDefines 'B'
 
-		:pushCondition({ workspaces = 'Workspace1' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
-
-	local workspace = State.new(store)
-		:select('workspaces', 'Workspace1')
-
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
-end
-
-
-function StateRemoveTests.removedByProject_shouldRemoveFromWorkspace()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
-
-		:pushCondition({ projects = 'Project1' })
-		:removeValue('defines', 'VALUE2')
-
-	local workspace = State.new(store)
-		:select('workspaces', 'Workspace1')
-
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
-end
-
-
-function StateRemoveTests.removedByNestedProject_shouldRemoveFromWorkspace()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-
-		:pushCondition({ projects = 'Project1' })
-		:removeValue('defines', 'VALUE2')
-
-	local workspace = State.new(store)
-		:select('workspaces', 'Workspace1')
-
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
-end
-
-
-function StateRemoveTests.removedByConfig_shouldRemoveFromWorkspace()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('configurations', { 'Debug', 'Release' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
-
-		:pushCondition({ projects = 'Project1', configurations = 'Debug' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
-
-	local workspace = State.new(store)
-		:select('workspaces', 'Workspace1')
-
-	test.isEqual({ 'VALUE1', 'VALUE3' }, workspace:get('defines'))
+	test.isEqual({ 'A', 'C' }, _global.defines)
 end
 
 
 ---
--- Values removed from projects which aren't part of the workspace should be ignored
+-- Value is defined by the workspace, then removed by one of several projects.
+--
+-- In most toolset project formats, it is difficult if not impossible to remove a
+-- value once it has been set. To avoid that situation, all configuration provided
+-- by Premake to the export modules must be additive only; any values that need to
+-- be removed must be handled by the query code.
+--
+-- In this case, projects are contained by a workspace, and inherit all of its
+-- values. If we write the to-be-removed value to the workspace, it would need to
+-- be removed in the project, which breaks the whole additive-only rule. Instead,
+-- the query must remove it from the *workspace*, and then add it back to all of
+-- the projects where it *wasn't* removed.
+--
+-- In theory, and every nomimal use case I can think of, this should get the same end
+-- result at build-time. Hypothetically, there could be a case where it is important
+-- for that value to be set at the higher level scope. Will have to solve that case
+-- if and when it comes up.
 ---
 
-function StateRemoveTests.removedByUnrelatedProject_shouldBeIgnored()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
+function StateRemoveTests.workspaceAdds_projectRemoves_removesFromWorkspace()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
 
-		:pushCondition({ projects = 'Project2' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-	local workspace = State.new(store)
-		:select('workspaces', 'Workspace1')
-
-	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, workspace:get('defines'))
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	test.isEqual({ 'A', 'C' }, wks.defines)
 end
 
 
+function StateRemoveTests.workspaceAdds_projectRemoves_removesFromTarget()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
 
----
--- If a value defined at a broader scope (workspace) is removed from a narrower
--- scope (project), the other siblings of that narrower scope (other projects)
--- should still receive the removed value, _even if inheritance is disabled._
--- Since the value would not be set in the exported workspace, it must be set in
--- the exported project or it won't be set at all.
----
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-function StateRemoveTests.removedByProject_addsToOtherProjects_withInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', { 'Project1', 'Project2' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
-
-		:pushCondition({ projects = 'Project1' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
-
-		:pushCondition({ projects = 'Project2' })
-		:popCondition()
-
-	local project2 = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('projects', 'Project2', State.INHERIT)
-
-	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, project2:get('defines'))
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' })
+	test.isEqual({}, prj.defines)
 end
 
 
-function StateRemoveTests.removedByProject_addsToOtherProjects_withNoInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', { 'Project1', 'Project2' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
+function StateRemoveTests.workspaceAdds_projectRemoves_removesFromTarget_inherit()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
 
-		:pushCondition({ projects = 'Project1' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-		:pushCondition({ projects = 'Project2' })
-		:popCondition()
-
-	local project2 = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('projects', 'Project2')
-
-	test.isEqual({ 'VALUE2' }, project2:get('defines'))
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' }):withInheritance()
+	test.isEqual({ 'A', 'C' }, prj.defines)
 end
 
 
-function StateRemoveTests.removedByConfig_addsToOtherConfigs_withInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('configurations', { 'Debug', 'Release' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
+function StateRemoveTests.workspaceAdds_projectRemoves_addsToSiblings()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
 
-		:pushCondition({ projects = 'Project1', configurations = 'Debug' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-	local releaseCfg = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('projects', 'Project1', State.INHERIT)
-		:select('configurations', 'Release', State.INHERIT)
-
-	test.isEqual({ 'VALUE1', 'VALUE2', 'VALUE3' }, releaseCfg:get('defines'))
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project1' })
+	test.isEqual({ 'B' }, prj.defines)
 end
 
 
-function StateRemoveTests.removedByConfig_addsToOtherConfigs_withNoInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('configurations', { 'Debug', 'Release' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
+function StateRemoveTests.workspaceAdds_projectRemoves_addsToSiblings_inherit()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
 
-		:pushCondition({ projects = 'Project1', configurations = 'Debug' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-	local releaseCfg = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('projects', 'Project1')
-		:select('configurations', 'Release')
-
-	test.isEqual({ 'VALUE2' }, releaseCfg:get('defines'))
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project1' }):withInheritance()
+	test.isEqual({ 'A', 'B', 'C' }, prj.defines)
 end
 
-function StateRemoveTests.removedByConfig_addsToOtherConfigs_withMixedInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', 'Project1')
-		:addValue('configurations', { 'Debug', 'Release' })
-		:addValue('defines', { 'VALUE1', 'VALUE2', 'VALUE3' })
-		:popCondition()
 
-		:pushCondition({ projects = 'Project1', configurations = 'Debug' })
-		:removeValue('defines', 'VALUE2')
-		:popCondition()
+function StateRemoveTests.workspaceAdds_projectRemoves_removesFromTarget_include()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
+	end)
 
-	local releaseCfg = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('projects', 'Project1')
-		:select('configurations', 'Release', State.INHER)
+	when({'projects:Project2'}, function ()
+		removeDefines 'B'
+	end)
 
-	test.isEqual({ 'VALUE2' }, releaseCfg:get('defines'))
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' }):include(_global)
+	test.isEqual({}, prj.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projectRemoves_addsToSiblings_include()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
+	end)
+
+	when({'projects:Project2'}, function ()
+		removeDefines 'B'
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project1' }):include(_global)
+	test.isEqual({ 'B' }, prj.defines)
 end
 
 
 ---
--- Values removed by a broader scope should follow the same rules
+-- Verify more permutations of the same pattern for completeness.
 ---
 
-function StateRemoveTests.removeByProject_fromConfig_withInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', { 'Project1' })
-		:addValue('configurations', { 'Debug', 'Release '})
-		:popCondition()
+function StateRemoveTests.globalAdds_projectRemoves_removesFromGlobal()
+	defines { 'A', 'B', 'C' }
 
-		:pushCondition({ configurations = 'Debug' })
-		:addValue('defines', { 'DEBUG1', 'DEBUG2', 'DEBUG3' })
-		:popCondition()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-		:pushCondition({ projects = 'Project1' })
-		:removeValue('defines', 'DEBUG2')
-		:popCondition()
-
-	local cfg = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('configurations', 'Debug', State.INHERIT)
-
-	test.isEqual({ 'DEBUG1', 'DEBUG3' }, cfg:get('defines'))
+	test.isEqual({ 'A', 'C' }, _global.defines)
 end
 
 
-function StateRemoveTests.removeByProject_fromConfig_withNoInheritance()
-	store
-		:pushCondition({ workspaces = 'Workspace1' })
-		:addValue('projects', { 'Project1' })
-		:addValue('configurations', { 'Debug', 'Release '})
-		:popCondition()
+function StateRemoveTests.globalAdds_projectRemoves_ignoresWorkspace()
+	defines { 'A', 'B', 'C' }
 
-		:pushCondition({ configurations = 'Debug' })
-		:addValue('defines', { 'DEBUG1', 'DEBUG2', 'DEBUG3' })
-		:popCondition()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
 
-		:pushCondition({ projects = 'Project1' })
-		:removeValue('defines', 'DEBUG2')
-		:popCondition()
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	test.isEqual({}, wks.defines)
+end
 
-	local cfg = State.new(store)
-		:select('workspaces', 'Workspace1')
-		:select('configurations', 'Debug')
 
-	test.isEqual({ 'DEBUG1', 'DEBUG3' }, cfg:get('defines'))
+function StateRemoveTests.globalAdds_projectRemoves_ignoresWorkspace_inherit()
+	defines { 'A', 'B', 'C' }
+
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
+	test.isEqual({ 'A', 'C' }, wks.defines)
+end
+
+
+function StateRemoveTests.globaleAdds_projectRemoves_removesFromTarget()
+	defines { 'A', 'B', 'C' }
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' })
+	test.isEqual({}, prj.defines)
+end
+
+
+function StateRemoveTests.globalAdds_projectRemoves_removesFromTarget_inherit()
+	defines { 'A', 'B', 'C' }
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
+	local prj = wks:select({ projects = 'Project2' }):withInheritance()
+	test.isEqual({ 'A', 'C' }, prj.defines)
+end
+
+
+function StateRemoveTests.globalAdds_projectRemoves_addsToSiblings()
+	defines { 'A', 'B', 'C' }
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project1' })
+	test.isEqual({ 'B' }, prj.defines)
+end
+
+
+function StateRemoveTests.globalAdds_projectRemoves_addsToSiblings_inheerit()
+	defines { 'A', 'B', 'C' }
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		when({'projects:Project2'}, function ()
+			removeDefines 'B'
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
+	local prj = wks:select({ projects = 'Project1' }):withInheritance()
+	test.isEqual({ 'A', 'B', 'C' }, prj.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_removesFromWorkspace()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	test.isEqual({ 'A', 'C' }, wks.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_removesFromWksCfg()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local cfg = wks:selectAny({ configurations='Debug', platforms='macOS' }):withInheritance()
+	test.isEqual({ 'A', 'C' }, cfg.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_removesFromTargetProj()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' }):withInheritance()
+	test.isEqual({ 'A', 'C' }, prj.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_ignoresSiblingProjs()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project1' }):withInheritance()
+	test.isEqual({ 'A', 'B', 'C' }, prj.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_removesFromTarget()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' })
+	local cfg = prj:selectAny({ configurations='Debug', platforms='macOS' })
+	test.isEqual({}, cfg.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_removesFromTarget_inherit()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' }):withInheritance()
+	local cfg = prj:selectAny({ configurations='Debug', platforms='macOS' }):withInheritance()
+	test.isEqual({ 'A', 'C' }, cfg.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_addsToSiblings()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' })
+	local cfg = prj:selectAny({ configurations='Release', platforms='macOS' })
+	test.isEqual({ 'B' }, cfg.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_projConfigRemoves_addsToSiblings_inherit()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			when({'configurations:Debug'}, function ()
+				removeDefines 'B'
+			end)
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' }):withInheritance()
+	local cfg = prj:selectAny({ configurations='Release', platforms='macOS' }):withInheritance()
+	test.isEqual({ 'A', 'B', 'C' }, cfg.defines)
+end
+
+
+function StateRemoveTests.workspaceAdds_globProjConfigRemoves_removesFromTarget()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		configurations { 'Debug', 'Release' }
+		platforms { 'macOS', 'iOS' }
+		defines { 'A', 'B', 'C' }
+	end)
+
+	when({'projects:Project2'}, function ()
+		when({'configurations:Debug'}, function ()
+			removeDefines 'B'
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project2' }):include(_global)
+	local cfg = prj:selectAny({ configurations='Debug', platforms='macOS' })
+	test.isEqual({}, cfg.defines)
+end
+
+
+---
+-- When adding values back into a configuration, should only add values that would have
+-- actually been removed at the outer scopes.
+---
+
+function StateRemoveTests.workspaceAdds_projectRemoves_ignoresUnsetValues()
+	workspace('Workspace1', function ()
+		projects { 'Project1', 'Project2', 'Project3' }
+		defines { 'A', 'B', 'C' }
+
+		when({'projects:Project2'}, function ()
+			removeDefines { 'B', 'D' }
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' })
+	local prj = wks:select({ projects = 'Project1' })
+	test.isEqual({ 'B' }, prj.defines)
 end

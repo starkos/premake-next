@@ -60,6 +60,12 @@ Field.register({
 })
 
 Field.register({
+	name = 'platforms',
+	kind = 'list:string',
+	isScope = true
+})
+
+Field.register({
 	name = 'projects',
 	kind = 'list:string',
 	isScope = true

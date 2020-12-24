@@ -5,9 +5,9 @@
 
 register('testing')
 
-workspace('MyWorkspace', function()
+workspace('MyWorkspace', function ()
 
-	project('MyProject', function()
+	project('MyProject', function ()
 
 	end)
 
