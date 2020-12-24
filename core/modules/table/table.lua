@@ -147,6 +147,10 @@ end
 ---
 
 function table.toString(self)
+	if self == nil then
+		return '(nil)'
+	end
+
 	local indentString = '   '
 	local indentLevel = 0
 	local indentation = ''

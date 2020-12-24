@@ -94,7 +94,12 @@ Field.register({
 		'Solaris',
 		'Wii',
 		'Windows',
-	},
+	}
+})
+
+Field.register({
+	name = 'uuid',
+	kind = 'string'
 })
 
 Field.register({

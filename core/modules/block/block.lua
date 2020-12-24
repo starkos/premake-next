@@ -16,11 +16,11 @@ Block.ADD = 'ADD'
 Block.REMOVE = 'REMOVE'
 
 
-function Block.new(operation, condition, baseDir)
+function Block.new(operation, condition, data)
 	return {
-		_operation = operation,
-		_condition = condition,
-		_baseDir = baseDir or _SCRIPT_DIR
+		operation = operation,
+		condition = condition,
+		data = data or {}
 	}
 end
 
@@ -39,24 +39,9 @@ function Block.acceptsOperation(self, operation)
 end
 
 
-function Block.baseDir(self)
-	return self._baseDir
-end
-
-
-function Block.condition(self)
-	return self._condition
-end
-
-
-function Block.operation(self)
-	return self._operation
-end
-
-
-function Block.store(self, fieldName, value)
-	local field = Field.get(fieldName)
-	self[fieldName] = Field.mergeValues(field, self[fieldName], value)
+function Block.store(self, field, value)
+	local data = self.data
+	data[field] = Field.mergeValues(field, data[field], value)
 end
 
 

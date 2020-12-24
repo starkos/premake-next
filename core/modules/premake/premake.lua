@@ -80,7 +80,7 @@ end
 
 
 function premake.newState(initialState)
-	return State.new(_store, _env, initialState)
+	return State.new(_store, table.mergeKeys(_env, initialState))
 end
 
 

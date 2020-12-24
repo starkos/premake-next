@@ -15,11 +15,12 @@ local Condition = declareType('Condition')
 Condition.NIL_MATCHES_ANY = true
 Condition.NIL_MATCHES_NONE = false
 
-
 local OP_MATCH = 'MATCH'
 local OP_AND = 'AND'
 local OP_OR = 'OR'
 local OP_NOT = 'NOT'
+
+local _allFieldsTested = {}
 
 
 ---
@@ -62,15 +63,14 @@ local function _match(operation, values, scope, matchOnNil)
 
 	if op == OP_MATCH then
 
-		local fieldName = operation[1]
+		local field = operation[1]
 		local pattern = operation[2]
 
 		local testValue
-		local field = Field.get(fieldName)
 		if field.isScope and scope ~= nil then
-			testValue = scope[fieldName]
+			testValue = scope[field]
 		else
-			testValue = values[fieldName]
+			testValue = values[field]
 		end
 
 		if testValue then
@@ -108,6 +108,16 @@ end
 
 
 ---
+-- Returns a list of all fields that have mentioned in any condition which has been
+-- parsed so far.
+---
+
+function Condition.allFieldsTested()
+	return _allFieldsTested
+end
+
+
+---
 -- Compares this condition to a list of scopes, and a collection of values.
 --
 -- @param values
@@ -135,8 +145,8 @@ function Condition.matchesScopeAndValues(self, values, scopes, matchOnNil)
 		local scope = scopes[i]
 
 		local isScopeMatch = true
-		for key in pairs(scope) do
-			if not fieldsTested[key] then
+		for field in pairs(scope) do
+			if not fieldsTested[field] then
 				isScopeMatch = false
 			end
 		end
@@ -235,8 +245,10 @@ function Condition._parseClause(self, defaultFieldName, fieldName, pattern)
 	end
 
 	-- we've reduced it to a simple 'key=value' test
-	self._fieldsTested[fieldName] = true
-	return { _op = OP_MATCH, fieldName, pattern }
+	local field = Field.get(fieldName)
+	self._fieldsTested[field] = true
+	_allFieldsTested[field] = true
+	return { _op = OP_MATCH, field, pattern }
 end
 
 

@@ -3,8 +3,10 @@ local State = require('state')
 local Workspace = declareType('Workspace', State)
 
 
-function Workspace.new(name, state)
+function Workspace.new(state)
 	local wks = instantiateType(Workspace, state)
+
+	local name = state.workspaces[1]
 
 	wks.name = name
 	wks.filename = wks.filename or name

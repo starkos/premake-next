@@ -9,7 +9,7 @@ local _prj
 function DomProjectTests.setup()
 	project('MyProject')
 
-	_prj = Project.new('MyProject', premake.newState():select({ projects = 'MyProject' }))
+	_prj = Project.new(premake.newState():select({ projects = 'MyProject' }))
 end
 
 

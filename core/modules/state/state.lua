@@ -32,18 +32,17 @@ State.__index = function(self, key)
 end
 
 
-local function _buildValue(blocks, fieldName)
-	local field = Field.get(fieldName)
-	local result = Field.defaultValue(field)
+local function _buildValue(blocks, field)
+	local result = nil
 
 	for i = 1, #blocks do
 		local block = blocks[i]
-		local blockValue = block.data[fieldName]
+		local blockValue = block.data[field]
 		if blockValue ~= nil then
-			local operation = block.targetOperation
+			local operation = block.operation
 			if operation == _ADD then
 				result = Field.mergeValues(field, result, blockValue)
-			elseif operation == _REMOVE then
+			else
 				result = Field.removeValues(field, result, blockValue)
 			end
 		end
@@ -53,22 +52,45 @@ local function _buildValue(blocks, fieldName)
 end
 
 
-
 local function _mergeValues(...)
 	local result = {}
 
 	local n = select('#', ...)
 	for i = 1, n do
 		local values = select(i, ...) or _EMPTY
-		for key, value in pairs(values) do
-			local field = Field.get(key)
-			result[key] = Field.mergeValues(field, result[key], value)
+		for field, value in pairs(values) do
+			result[field] = Field.mergeValues(field, result[field], value)
 		end
 	end
 
 	return result
 end
 
+
+---
+-- Converts a "normal" Lua table into a data block: keys are Field instances,
+-- values use the correct data structure for the field type. This transformation
+-- allows values passed in (scope, initial values) to be handle the same way as
+-- data blocks received from the store.
+---
+
+local function _normalizeDataBlock(block)
+	local result = {}
+
+	if block ~= nil then
+		for key, value in pairs(block) do
+			local field = Field.get(key)
+			result[field] = Field.mergeValues(field, _EMPTY, value)
+		end
+	end
+
+	return result
+end
+
+
+---
+-- Private constructor for new State instances, sets some common default values.
+---
 
 local function _new(state)
 	-- Because we allow instances of State to be dot-indexed to retrieve query values,
@@ -97,10 +119,10 @@ end
 --    conditions.
 ---
 
-function State.new(store, ...)
+function State.new(store, initialState)
 	return _new({
 		_sourceBlocks = Store.blocks(store),
-		_initialValues = _mergeValues(...),
+		_initialValues = _normalizeDataBlock(initialState),
 
 		_localScopes = _EMPTY_SCOPE,
 		_targetScopes = _EMPTY_SCOPE,
@@ -148,9 +170,8 @@ function State.fetch(self, fieldName)
 		state._unsetValues = {}
 	end
 
-	if Field.exists(fieldName) then
-		value = _buildValue(state._blocks, fieldName) or state._initialValues[fieldName]
-	end
+	local field = Field.get(fieldName)
+	value = _buildValue(state._blocks, field) or state._initialValues[field] or Field.defaultValue(field)
 
 	if value == nil then
 		-- flag that this value has already been looked up and was not found; don't look up again
@@ -177,24 +198,23 @@ end
 ---
 
 function _select(self, localScopes)
-	-- Normalize the scopes
-	for i = 1, #localScopes do
-		localScopes[i] = _mergeValues(localScopes[i])
+	local container = self[State]
+	if container._noInheritanceVersion ~= nil then
+		container = container._noInheritanceVersion[State]
 	end
 
-	-- TODO: this is the container for the new state; better name?
-	-- always work with the no-inheritance version
-	local state = self[State]
-	if state._noInheritanceVersion ~= nil then
-		state = state._noInheritanceVersion[State]
+	local initialValues = container._initialValues
+	for i = 1, #localScopes do
+		localScopes[i] = _normalizeDataBlock(localScopes[i])
+		initialValues = _mergeValues(localScopes[i], initialValues)
 	end
 
 	-- always look in container for scope blocks; better name for this?
-	local includes = { state }
+	local includes = { container }
 
 	-- Merge my local scopes with those of my container to get the full hierarchy path
 	local targetScopes = {}
-	local containerScopes = state._targetScopes
+	local containerScopes = container._targetScopes
 	for i = 1, #containerScopes do
 		for j = 1, #localScopes do
 			table.insert(targetScopes, table.mergeKeys(localScopes[j], containerScopes[i]))
@@ -202,7 +222,7 @@ function _select(self, localScopes)
 	end
 
 	local globalScopes = {}
-	containerScopes = state._globalScopes
+	containerScopes = container._globalScopes
 	for i = 1, #containerScopes do
 		for j = 1, #localScopes do
 			table.insert(globalScopes, table.mergeKeys(localScopes[j], containerScopes[i]))
@@ -211,8 +231,8 @@ function _select(self, localScopes)
 	end
 
 	return _new({
-		_sourceBlocks = state._sourceBlocks,
-		_initialValues = _mergeValues(state._initialValues, localScope),
+		_sourceBlocks = container._sourceBlocks,
+		_initialValues = initialValues,
 		_container = self[State],
 
 		_localScopes = localScopes,
