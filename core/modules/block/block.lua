@@ -11,6 +11,7 @@ local Field = require('field')
 
 local Block = {}
 
+Block.NONE = 'NONE'
 Block.ADD = 'ADD'
 Block.REMOVE = 'REMOVE'
 

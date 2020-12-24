@@ -4,22 +4,25 @@ local Workspace = require('dom').Workspace
 local DomWorkspaceTests = test.declare('DomWorkspaceTests', 'dom')
 
 
-function DomWorkspaceTests.new_setsName()
+local _wks
+
+function DomWorkspaceTests.setup()
 	workspace('MyWorkspace')
-	local wks = Workspace.new(premake.select(), 'MyWorkspace')
-	test.isEqual('MyWorkspace', wks.name)
+
+	_wks = Workspace.new('MyWorkspace', premake.newState():select({ workspaces = 'MyWorkspace' }))
+end
+
+
+function DomWorkspaceTests.new_setsName()
+	test.isEqual('MyWorkspace', _wks.name)
 end
 
 
 function DomWorkspaceTests.new_setsFilename()
-	workspace('MyWorkspace')
-	local wks = Workspace.new(premake.select(), 'MyWorkspace')
-	test.isEqual('MyWorkspace', wks.filename)
+	test.isEqual('MyWorkspace', _wks.filename)
 end
 
 
 function DomWorkspaceTests.new_setsLocation()
-	workspace('MyWorkspace')
-	local wks = Workspace.new(premake.select(), 'MyWorkspace')
-	test.isEqual(_SCRIPT_DIR, wks.location)
+	test.isEqual(_SCRIPT_DIR, _wks.location)
 end

@@ -67,6 +67,7 @@ end
 
 function Store.popCondition(self)
 	Stack.pop(self._conditions)
+	Store._newBlock(self, Block.ADD)
 	return self
 end
 

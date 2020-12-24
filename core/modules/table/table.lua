@@ -54,6 +54,21 @@ end
 
 
 ---
+-- Return an array of keys used in a table.
+---
+
+function table.keys(self)
+	local keys = {}
+
+	for key in pairs(self) do
+		table.insert(keys, key)
+	end
+
+	return keys
+end
+
+
+---
 -- Return the last value in an array.
 ---
 
@@ -117,11 +132,7 @@ end
 ---
 
 function table.sortedKeys(self)
-	local keys = {}
-
-	for key in pairs(self) do
-		table.insert(keys, key)
-	end
+	local keys = table.keys(self)
 
 	table.sort(keys, function(a, b)
 		return tostring(a) < tostring(b)

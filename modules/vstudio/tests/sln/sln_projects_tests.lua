@@ -76,8 +76,9 @@ end
 
 function VsSlnProjectsTests.translatesEnvironmentVars()
 	_execute(function ()
-		project('MyProject')
-		location('$(SDK_LOCATION)/MyProject')
+		project('MyProject', function ()
+			location('$(SDK_LOCATION)/MyProject')
+		end)
 	end)
 	test.capture [[
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MyProject", "%SDK_LOCATION%\MyProject\MyProject.vcxproj", "{42B5DBC6-AE1F-903D-F75D-41E363076E92}"
