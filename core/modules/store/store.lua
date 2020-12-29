@@ -12,49 +12,22 @@ local Store = declareType('Store')
 
 
 ---
--- Adds new block to the end of the store's list of blocks.
+-- Blocks are categorized by their operation, one of ADD or REMOVE, indicating
+-- whether they are adding values to the state (e.g. `defines('a')`) or removing
+-- from it (`removeDefines('a')`).
 ---
 
-local function _appendBlock(self, operation)
-	local block = table.last(self._blocks)
-	local condition = Stack.top(self._conditions)
+local function _getBlockFor(self, operation)
+	local block = self._currentBlock
 
-	-- Check to see if the current block was actually used. If not, reuse it
-	if block ~= nil and block.operation == Block.NONE then
-		block.operation = operation
-		block.condition = condition
-	else
+	if block == nil or block.operation ~= operation then
+		local condition = Stack.top(self._conditions)
 		block = Block.new(operation, condition)
 		table.insert(self._blocks, block)
+		self._currentBlock = block
 	end
 
 	return block
-end
-
-
----
--- Stores values into a block.
---
--- @param operation
---    One of ADD or REMOVE, indicating whether the intended operation is to store new values
---    in the settings (e.g. `defines 'A'`) or remove existing values (`removeDefines 'A'`).
--- @param field
---    The field being stored.
--- @param value
---    The value to be added to the field's contents.
----
-
-function _applyValueOperation(self, operation, field, value)
-	local block = table.last(self._blocks)
-
-	-- If the current block is targeting the same operation (ADD or REMOVE), I can just push
-	-- this new value into it. If it is a different operation I have to create a new block
-	if block.operation ~= operation and block.operation ~= Block.NONE then
-		block = _appendBlock(self, operation)
-	end
-
-	block.operation = operation
-	Block.store(block, field, value)
 end
 
 
@@ -67,14 +40,11 @@ end
 
 function Store.new()
 	-- if new fields are added here, update `snapshot()` and `restore()` too
-	local newStore = instantiateType(Store, {
+	return instantiateType(Store, {
 		_conditions = Stack.new({ Condition.new(_EMPTY) }),
-		_blocks = {}
+		_blocks = {},
+		_currentBlock = nil
 	})
-
-	_appendBlock(newStore, _EMPTY, Block.NONE)
-
-	return newStore
 end
 
 
@@ -84,6 +54,15 @@ end
 
 function Store.blocks(self)
 	return self._blocks
+end
+
+
+---
+-- Print the current contents of the store.
+---
+
+function Store.debug(self)
+	print(table.toString(self._blocks))
 end
 
 
@@ -106,8 +85,7 @@ function Store.pushCondition(self, clauses)
 	end
 
 	Stack.push(conditions, condition)
-	_appendBlock(self, Block.NONE)
-
+	self._currentBlock = nil
 	return self
 end
 
@@ -118,7 +96,7 @@ end
 
 function Store.popCondition(self)
 	Stack.pop(self._conditions)
-	_appendBlock(self, Block.NONE)
+	self._currentBlock = nil
 	return self
 end
 
@@ -128,7 +106,8 @@ end
 ---
 
 function Store.addValue(self, field, value)
-	_applyValueOperation(self, Block.ADD, field, value)
+	local block = _getBlockFor(self, Block.ADD)
+	Block.store(block, field, value)
 	return self
 end
 
@@ -138,7 +117,8 @@ end
 ---
 
 function Store.removeValue(self, field, value)
-	_applyValueOperation(self, Block.REMOVE, field, value)
+	local block = _getBlockFor(self, Block.REMOVE)
+	Block.store(block, field, value)
 	return self
 end
 

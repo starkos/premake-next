@@ -189,6 +189,12 @@ function table.toString(self)
 	end
 
 	function formatTable(value)
+		-- If table supplies its own formatter, use that
+		local str = tostring(value)
+		if not string.startsWith(str, 'table: ') then
+			return str
+		end
+
 		local lines = { '{' }
 
 		pushIndent()

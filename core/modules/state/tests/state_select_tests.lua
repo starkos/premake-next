@@ -6,7 +6,7 @@ local premake = require('premake')
 local State = require('state')
 
 
-local StateSelectTests = test.declare('StateSelectTests', 'state2')
+local StateSelectTests = test.declare('StateSelectTests', 'state')
 
 local _global
 
@@ -375,4 +375,15 @@ function StateSelectTests.select_config_fromAll_inherit()
 	local prj = wks:select({ projects = 'Project1' }):include(_global):withInheritance()
 	local cfg = prj:select({ configurations = 'Debug' }):include(wks, _global):withInheritance()
 	test.isEqual({ 'GLOB', 'GLOB_DEBUG', 'GLOB_PRJ1', 'GLOB_PRJ1_DEBUG', 'WKS1', 'WKS1_DEBUG', 'WKS1_PRJ1', 'WKS1_PRJ1_DEBUG' }, cfg.defines)
+end
+
+
+---
+-- The scope values specified at state creation should not be overwritten by values
+-- returned by the query.
+---
+
+function StateSelectTests.select_config_fromGlobal_inherit_preservesScope()
+	local cfg = _global:select({ configurations = 'Debug' }):withInheritance()
+	test.isEqual({ 'Debug' }, cfg.configurations)
 end

@@ -142,9 +142,8 @@ function Query.evaluate(state)
 					end
 
 					return ADD, ADD
-				end
 
-				if blockOperation == REMOVE then
+				elseif blockOperation == REMOVE then
 
 					-- Try to eliminate this block by comparing it to the current accumulated global state. Here
 					-- I don't care about strict scoping, and I don't care if some of the values being tested by
@@ -182,9 +181,6 @@ function Query.evaluate(state)
 
 					return REMOVE, ADD
 				end
-
-				-- _debug('Unhandled block operation')
-				return UNKNOWN, UNKNOWN
 			end
 
 			globalOperation, targetOperation = _testBlock(sourceBlock, blockCondition, blockOperation, globalScopes, globalValues, targetScopes, targetValues)
