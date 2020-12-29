@@ -5,7 +5,7 @@
 local premake = require('premake')
 local State = require('state')
 
-local StateOooTests = test.declare('StateOooTests', 'state2')
+local StateOooTests = test.declare('StateOooTests', 'state')
 
 
 ---

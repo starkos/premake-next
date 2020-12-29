@@ -2,7 +2,7 @@ local premake = require('premake')
 local Store = require('store')
 local State = require('state')
 
-local StateRemoveTests = test.declare('StateRemoveTests', 'state2')
+local StateRemoveTests = test.declare('StateRemoveTests', 'state')
 
 
 local _global

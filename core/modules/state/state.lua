@@ -31,6 +31,15 @@ State.__index = function(self, key)
 	return State[key] or State.fetch(self, key)
 end
 
+State.__newindex = function(self, key, value)
+	if value == nil then
+		-- nil values need to get marked here, else will try to query value
+		self[State]._unsetValues[key] = true
+	else
+		rawset(self, key, value)
+	end
+end
+
 
 local function _buildValue(blocks, field)
 	local result = nil
@@ -101,7 +110,7 @@ local function _new(state)
 		[State] = table.mergeKeys({
 			_container = nil,
 			_blocks = _EMPTY,
-			_unsetValues = _EMPTY
+			_unsetValues = {}
 		}, state)
 	})
 end
@@ -167,11 +176,18 @@ function State.fetch(self, fieldName)
 	-- If this is the first fetch, filter the store's list of blocks to only those that apply to us
 	if state._blocks == _EMPTY then
 		state._blocks = Query.evaluate(state)
-		state._unsetValues = {}
 	end
 
+	-- If this is a request for one of the scope values which was used to seed this query, return
+	-- that exact value without collecting any additional values from the query results. Otherwise,
+	-- go fetch from the blocks returned by the query.
 	local field = Field.get(fieldName)
-	value = _buildValue(state._blocks, field) or state._initialValues[field] or Field.defaultValue(field)
+	local initialValues = state._initialValues
+	if field.isScope and initialValues[field] ~= nil then
+		value = initialValues[field]
+	else
+		value = _buildValue(state._blocks, field) or initialValues[field] or Field.defaultValue(field)
+	end
 
 	if value == nil then
 		-- flag that this value has already been looked up and was not found; don't look up again
@@ -271,7 +287,9 @@ function State.selectAny(self, scope)
 	end
 
 	-- We also need to match the case where all the scopes are provided (AND instead of OR)
-	table.insert(localScopes, scope)
+	if #localScopes > 1 then
+		table.insert(localScopes, scope)
+	end
 
 	-- TODO: This is only handling the case where two scopes are provided, i.e. 'configurations'
 	-- and 'platforms'. If three or more or provided, this would also need to add scopes for

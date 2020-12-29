@@ -6,7 +6,7 @@ local premake = require('premake')
 local State = require('state')
 
 
-local StateValueTests = test.declare('StateValueTests', 'state2')
+local StateValueTests = test.declare('StateValueTests', 'state')
 
 
 local _global
@@ -83,4 +83,21 @@ function StateValueTests.get_onAccumulatedState()
 
 	local state = State.new(premake.store())
 	test.isEqual({ 'MACOS' }, state.defines)
+end
+
+
+---
+-- Should be possible to roundtrip non-field values like a regular table.
+---
+
+function StateValueTests.setAdHocKey_toValue()
+	local state = State.new(premake.store())
+	state.xyz = 'XYZ'
+	test.isEqual('XYZ', state.xyz)
+end
+
+function StateValueTests.setAdHocKey_toNil()
+	local state = State.new(premake.store())
+	state.xyz = nil
+	test.isNil(state.xyz)
 end

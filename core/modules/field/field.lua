@@ -216,10 +216,18 @@ function Field.mergeValues(self, currentValue, newValue)
 end
 
 
+---
+-- Register a callback function to be notified when a new field is added.
+---
+
 function Field.onFieldAdded(fn)
 	table.insert(_onFieldAddedCallbacks, Callback.new(fn))
 end
 
+
+---
+-- Register a callback function to be notified when a field is removed.
+---
 
 function Field.onFieldRemoved(fn)
 	table.insert(_onFieldRemovedCallbacks, Callback.new(fn))
@@ -232,6 +240,15 @@ end
 
 function Field.removeValues(self, currentValue, patternsToRemove)
 	return _processors.remove[self.kind](self, currentValue, patternsToRemove)
+end
+
+
+---
+-- Custom tostring() formatter for fields.
+---
+
+function Field.__tostring(self)
+	return 'Field: ' .. self.name
 end
 
 
