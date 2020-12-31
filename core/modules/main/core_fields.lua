@@ -10,6 +10,17 @@ Field.register({
 })
 
 Field.register({
+	name = 'architecture',
+	kind = 'string',
+	allowed = {
+		'x86',
+		'x86_86',
+		'arm',
+		'arm64'
+	}
+})
+
+Field.register({
 	name = 'baseDir',
 	kind = 'path'
 })
@@ -99,6 +110,11 @@ Field.register({
 
 Field.register({
 	name = 'uuid',
+	kind = 'string'
+})
+
+Field.register({
+	name = 'version',
 	kind = 'string'
 })
 

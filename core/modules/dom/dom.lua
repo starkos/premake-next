@@ -1,6 +1,7 @@
-local Dom = declareType('Dom')
+local dom = {}
 
-Dom.Project = doFile('./src/project.lua', Dom)
-Dom.Workspace = doFile('./src/workspace.lua', Dom)
+dom.Config = doFile('./src/config.lua', dom)
+dom.Project = doFile('./src/project.lua', dom)
+dom.Workspace = doFile('./src/workspace.lua', dom)
 
-return Dom
+return dom

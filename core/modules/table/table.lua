@@ -3,6 +3,25 @@
 ---
 
 ---
+-- Call a function on each element of an array, and collect unique return values
+-- into a new array.
+---
+
+function table.collectUnique(self, func)
+	local result = {}
+
+	for i = 1, #self do
+		local newValue = func(self[i])
+		if newValue ~= nil and not table.contains(result, newValue) then
+			table.insert(result, newValue)
+		end
+	end
+
+	return result
+end
+
+
+---
 -- Does the table contain the specified value?
 ---
 
@@ -84,9 +103,11 @@ end
 
 function table.map(self, func)
 	local result = {}
+
 	for key, value in pairs(self) do
 		result[key] = func(key, value)
 	end
+
 	return result
 end
 

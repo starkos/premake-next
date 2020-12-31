@@ -1,7 +1,9 @@
+local premake = require('premake')
 local vstudio = require('vstudio')
+
 local sln = vstudio.sln
 
-local VsSlnProjectsTests = test.declare('VsSlnProjectsTests', 'vstudio')
+local VsSlnProjectsTests = test.declare('VsSlnProjectsTests', 'vstudio-sln', 'vstudio')
 
 
 function VsSlnProjectsTests.setup()
@@ -15,7 +17,7 @@ local function _execute(fn)
 		fn()
 	end)
 
-	local wks = vstudio.extractWorkspaces()[1]
+	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
 	sln.projects(wks)
 end
 

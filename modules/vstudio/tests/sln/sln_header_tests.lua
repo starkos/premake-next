@@ -1,7 +1,7 @@
 local vstudio = require('vstudio')
 local sln = vstudio.sln
 
-local VsSlnHeaderTests = test.declare('VsSlnHeaderTests', 'vstudio')
+local VsSlnHeaderTests = test.declare('VsSlnHeaderTests', 'vstudio-sln', 'vstudio')
 
 
 function VsSlnHeaderTests.on2010()

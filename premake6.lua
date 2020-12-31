@@ -5,10 +5,9 @@
 
 register('testing')
 
-workspace('MyWorkspace', function ()
+workspace('Premake', function ()
+	configurations { 'Debug', 'Release' }
 
-	project('MyProject', function ()
-
+	project('Premake', function ()
 	end)
-
 end)

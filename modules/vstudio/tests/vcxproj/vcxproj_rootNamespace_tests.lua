@@ -1,4 +1,6 @@
+local premake = require('premake')
 local vstudio = require('vstudio')
+
 local vcxproj = vstudio.vcxproj
 
 local VsVcxRootNamespaceTests = test.declare('VsVcxRootNamespaceTests', 'vstudio')
@@ -9,7 +11,8 @@ function VsVcxRootNamespaceTests.isSetToProjectName()
 		project('ProjectA')
 	end)
 
-	local prj = vstudio.extractWorkspaces()[1].projects[1]
+	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
+	local prj = wks.projects[1]
 	vcxproj.rootNamespace(prj)
 
 	test.capture [[

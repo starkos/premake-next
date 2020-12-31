@@ -3,17 +3,19 @@ local State = require('state')
 
 local vstudio = {}
 
+
 -- load in this module's components
-local _MODULES = {  'project', 'workspace', 'sln', 'vcxproj' }
+local _MODULES = {  'Config', 'Project', 'Workspace', 'sln', 'vcxproj' }
 for _, module in pairs(_MODULES) do
-	vstudio[module] = doFile('./src/' .. module .. '.lua', vstudio)
+	vstudio[module] = doFile('./src/' .. module:lower() .. '.lua', vstudio)
 end
+
 
 local _VERSION_INFO = {
 	['2010'] = {
 		solutionFileFormatVersion = '11',
 		toolsVersion = "4.0",
-		visualStudioVersion = '2010'
+		visualStudioVersion = '2010',
 	},
 	['2012'] = {
 		solutionFileFormatVersion = '12',
@@ -44,49 +46,21 @@ local _VERSION_INFO = {
 function vstudio.export(version)
 	vstudio.setTargetVersion(version)
 
-	printf('Configuring...')
-	local workspaces = vstudio.extractWorkspaces()
-
-	for i = 1, #workspaces do
-		printf('Exporting %s...', workspaces[i].name)
-		vstudio.exportWorkspace(workspaces[i])
-	end
-
-	print('Done.')
-end
-
-
----
--- Extracts all workspaces and their contained projects, etc. from the current
--- global store and prepares them for use by the Visual Studio exporters.
----
-
-function vstudio.extractWorkspaces()
 	local state = premake.newState({
 		action = 'vstudio',
 		version = version
 	})
 
-	local workspaces = {}
-	local names = state.workspaces
-	for i = 1, #names do
-		workspaces[i] = vstudio.workspace.extract(state, names[i])
+	printf('Configuring...')
+	local workspaces = vstudio.Workspace.extractAll(state)
+
+	for i = 1, #workspaces do
+		local wks = workspaces[i]
+		printf('Exporting %s...', wks.name)
+		wks:export()
 	end
 
-	return workspaces
-end
-
-
----
--- Export a workspace and its contained projects, etc.
----
-
-function vstudio.exportWorkspace(wks)
-	vstudio.workspace.export(wks)
-	local projects = wks.projects
-	for i = 1, #projects do
-		vstudio.project.export(projects[i])
-	end
+	print('Done.')
 end
 
 

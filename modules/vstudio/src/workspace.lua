@@ -1,32 +1,75 @@
-local Dom = require('dom')
+---
+-- Visual Studio helper methods for workspaces.
+---
+
+local dom = require('dom')
 local premake = require('premake')
-local path = require('path')
 
 local vstudio = select(1, ...)
 
-local workspace = {}
+local Workspace = declareType('Workspace', dom.Workspace)
 
 
-function workspace.extract(state, name)
-	local wks = Dom.Workspace.new(state:select({ workspaces = name }))
-	wks.global = state
-	wks.exportPath = vstudio.sln.filename(wks)
+---
+-- Extract and return a list of all workspaces in a state.
+--
+-- @param rootState
+--    The root state instance.
+-- @returns
+--    A list of workspaces found in the state.
+---
 
-	local projects = {}
+function Workspace.extractAll(rootState)
+	local workspaces = {}
 
-	local names = wks.projects
+	local names = rootState.workspaces
 	for i = 1, #names do
-		projects[i] = vstudio.project.extract(wks, names[i])
+		workspaces[i] = Workspace.extract(rootState, names[i])
 	end
 
-	wks.projects = projects
+	return workspaces
+end
+
+
+---
+-- Extra a workspace state instance from the root state.
+--
+-- @param rootState
+--    The root state instance.
+-- @param name
+--    The name of the workspace to extract.
+-- @returns
+--    The corresponding workspace object.
+---
+
+function Workspace.extract(rootState, name)
+	local wks = instantiateType(Workspace, dom.Workspace.new(rootState
+		:select({ workspaces = name })
+		:withInheritance())
+	)
+
+	wks.rootState = rootState
+	wks.exportPath = vstudio.sln.filename(wks)
+
+	wks.configs = vstudio.Config.extractAll(wks)
+	wks.projects = vstudio.Project.extractAll(wks)
+
 	return wks
 end
 
 
-function workspace.export(wks)
-	premake.export(wks, wks.exportPath, vstudio.sln.export)
+---
+-- Export the contents of a workspace to a Visual Studio `.sln` solution file.
+---
+
+function Workspace.export(self)
+	premake.export(self, self.exportPath, vstudio.sln.export)
+
+	local projects = self.projects
+	for i = 1, #projects do
+		projects[i]:export()
+	end
 end
 
 
-return workspace
+return Workspace

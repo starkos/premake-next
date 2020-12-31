@@ -1,4 +1,5 @@
 local vstudio = require('vstudio')
+
 local vcxproj = vstudio.vcxproj
 
 local VsVcxProjectTests = test.declare('VsVcxProjectTests', 'vstudio')

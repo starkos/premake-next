@@ -17,6 +17,30 @@ int pmk_string_contains(lua_State* L)
 }
 
 
+int pmk_string_join(lua_State* L)
+{
+	char buffer[PATH_MAX] = { '\0' };
+
+	const char* separator = luaL_checkstring(L, 1);
+
+	int n = lua_gettop(L);
+	if (n == 1)
+		return (0);
+
+	for (int i = 2; i <= n; ++i) {
+		const char* value = lua_tostring(L, i);
+		if (value != NULL) {
+			if (i > 2)
+				strcat(buffer, separator);
+			strcat(buffer, value);
+		}
+	}
+
+	lua_pushstring(L, buffer);
+	return (1);
+}
+
+
 int pmk_string_hash(lua_State* L)
 {
 	const char* value = luaL_checkstring(L, 1);
