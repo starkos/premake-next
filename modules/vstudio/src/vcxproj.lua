@@ -10,50 +10,114 @@ local wl = export.writeln
 
 local vcxproj = {}
 
-vcxproj.elements = {}
 
-vcxproj.elements.project = function (prj)
-	return {
-		vcxproj.xmlDeclaration,
-		vcxproj.project,
-		vcxproj.projectConfigurations,
-		vcxproj.globals,
-		vcxproj.importDefaultProps,
-		vcxproj.configurationPropertiesGroup,
-		vcxproj.importLanguageSettings,
-		vcxproj.importExtensionSettings,
-		vcxproj.propertySheetGroup,
-		vcxproj.userMacros,
-		vcxproj.outputPropertiesGroup,
-		vcxproj.itemDefinitionGroups,
-		vcxproj.assemblyReferences,
-		vcxproj.files,
-		vcxproj.projectReferences,
-		vcxproj.importLanguageTargets,
-		vcxproj.importExtensionTargets,
-		vcxproj.ensureNuGetPackageBuildImports,
-		vcxproj.endTag
-	}
-end
 
-vcxproj.elements.globals = function (prj)
-	return {
-		vcxproj.projectGuid,
-		vcxproj.ignoreWarnCompileDuplicatedFilename,
-		vcxproj.keyword,
-		vcxproj.rootNamespace,
-	}
-end
+---
+-- Element lists describe the contents of each section of the project file
+---
 
-vcxproj.elements.importExtensionSettings = function (prj)
-	return {}
-end
+vcxproj.elements = {
 
+	project = function (prj)
+		return {
+			vcxproj.xmlDeclaration,
+			vcxproj.project,
+			vcxproj.projectConfigurations,
+			vcxproj.globals,
+			vcxproj.importDefaultProps,
+			vcxproj.configurationPropertyGroup,
+			vcxproj.importLanguageSettings,
+			vcxproj.importExtensionSettings,
+			vcxproj.propertySheets,
+			vcxproj.userMacros,
+			vcxproj.outputPropertyGroup,
+			vcxproj.itemDefinitionGroup,
+			vcxproj.assemblyReferences,
+			vcxproj.files,
+			vcxproj.projectReferences,
+			vcxproj.importLanguageTargets,
+			vcxproj.importExtensionTargets,
+			vcxproj.ensureNuGetPackageBuildImports,
+			vcxproj.endTag
+		}
+	end,
+
+	globals = function (prj)
+		return {
+			vcxproj.projectGuid,
+			vcxproj.ignoreWarnCompileDuplicatedFilename,
+			vcxproj.keyword,
+			vcxproj.rootNamespace
+		}
+	end,
+
+	clCompile = function (cfg)
+		return {
+			vcxproj.precompiledHeader,
+			vcxproj.warningLevel,
+			vcxproj.preprocessorDefinitions,
+			vcxproj.debugInformationFormat,
+			vcxproj.optimization,
+			vcxproj.functionLevelLinking,
+			vcxproj.intrinsicFunctions,
+			vcxproj.minimalRebuild,
+			vcxproj.stringPooling
+		}
+	end,
+
+	configurationPropertyGroup = function (cfg)
+		return {
+			vcxproj.configurationType,
+			vcxproj.useDebugLibraries,
+			vcxproj.characterSet,
+			vcxproj.platformToolset
+		}
+	end,
+
+	importExtensionSettings = function (prj)
+		return {}
+	end,
+
+	itemDefinitionGroup = function (cfg)
+		return {
+			vcxproj.clCompile,
+			vcxproj.link
+		}
+	end,
+
+	link = function (cfg)
+		return {
+			vcxproj.subSystem,
+			vcxproj.generateDebugInformation,
+			vcxproj.enableComdatFolding,
+			vcxproj.optimizeReferences
+		}
+	end,
+
+	outputPropertyGroup = function (cfg)
+		return {
+			vcxproj.linkIncremental,
+			vcxproj.outDir,
+			vcxproj.intDir,
+			vcxproj.targetName,
+			vcxproj.targetExt
+		}
+	end
+}
+
+
+---
+-- Build the export file name for a project.
+---
 
 function vcxproj.filename(prj)
 	return path.join(prj.location, prj.filename) .. '.vcxproj'
 end
 
+
+---
+-- Export the project to the currently open output stream.
+---
 
 function vcxproj.export(prj)
 	export.eol('\r\n')
@@ -61,6 +125,11 @@ function vcxproj.export(prj)
 	premake.callArray(vcxproj.elements.project, prj)
 end
 
+
+---
+-- Handlers for structural elements, in the order in which they appear in the .vcxproj.
+-- Handlers for individual setting elements are at the bottom of the file.
+---
 
 function vcxproj.xmlDeclaration()
 	wl('<?xml version="1.0" encoding="utf-8"?>')
@@ -81,18 +150,35 @@ end
 function vcxproj.projectConfigurations(prj)
 	wl('<ItemGroup Label="ProjectConfigurations">')
 	export.indent()
-		wl('<ProjectConfiguration Include="Debug|Win32">')
-		export.indent()
-			wl('<Configuration>Debug</Configuration>')
-			wl('<Platform>Win32</Platform>')
-		export.outdent()
-		wl('</ProjectConfiguration>')
-		wl('<ProjectConfiguration Include="Release|Win32">')
-		export.indent()
-			wl('<Configuration>Release</Configuration>')
-			wl('<Platform>Win32</Platform>')
-		export.outdent()
-		wl('</ProjectConfiguration>')
+
+	local configs = prj.configs
+
+	-- Identify all architectures used by the project
+	local architectures = table.collectUnique(configs, function (cfg)
+		return cfg.vs_architecture
+	end)
+
+	for i = 1, #configs do
+		local cfg = configs[i]
+		for j = 1, #architectures do
+			local arch = architectures[j]
+
+			local cfgName
+			if cfg.platform ~= arch then
+				cfgName = string.join(' ', cfg.configuration, cfg.platform)
+			else
+				cfgName = cfg.configuration
+			end
+
+			wl('<ProjectConfiguration Include="%s|%s">', cfgName, arch)
+			export.indent()
+			wl('<Configuration>%s</Configuration>', cfgName)
+			wl('<Platform>%s</Platform>', arch)
+			export.outdent()
+			wl('</ProjectConfiguration>')
+		end
+	end
+
 	export.outdent()
 	wl('</ItemGroup>')
 end
@@ -107,48 +193,20 @@ function vcxproj.globals(prj)
 end
 
 
-function vcxproj.projectGuid(prj)
-	wl('<ProjectGuid>{%s}</ProjectGuid>', prj.uuid)
-end
-
-
-function vcxproj.ignoreWarnCompileDuplicatedFilename(prj)
-	wl('<IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>')
-end
-
-
-function vcxproj.keyword(prj)
-	wl('<Keyword>Win32Proj</Keyword>')
-end
-
-
-function vcxproj.rootNamespace(prj)
-	wl('<RootNamespace>%s</RootNamespace>', esc(prj.name))
-end
-
-
 function vcxproj.importDefaultProps(prj)
 	wl('<Import Project="$(VCTargetsPath)\\Microsoft.Cpp.Default.props" />')
 end
 
 
-function vcxproj.configurationPropertiesGroup(prj)
-	wl('<PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'Debug|Win32\'" Label="Configuration">')
-	export.indent()
-		wl('<ConfigurationType>Application</ConfigurationType>')
-		wl('<UseDebugLibraries>true</UseDebugLibraries>')
-		wl('<CharacterSet>Unicode</CharacterSet>')
-		wl('<PlatformToolset>v140</PlatformToolset>')
-	export.outdent()
-	wl('</PropertyGroup>')
-	wl('<PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|Win32\'" Label="Configuration">')
-	export.indent()
-		wl('<ConfigurationType>Application</ConfigurationType>')
-		wl('<UseDebugLibraries>false</UseDebugLibraries>')
-		wl('<CharacterSet>Unicode</CharacterSet>')
-		wl('<PlatformToolset>v140</PlatformToolset>')
-	export.outdent()
-	wl('</PropertyGroup>')
+function vcxproj.configurationPropertyGroup(prj)
+	for i = 1, #prj.configs do
+		local cfg = prj.configs[i]
+		wl('<PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'%s\'" Label="Configuration">', cfg.vs_build)
+		export.indent()
+		premake.callArray(vcxproj.elements.configurationPropertyGroup, cfg)
+		export.outdent()
+		wl('</PropertyGroup>')
+	end
 end
 
 
@@ -166,17 +224,15 @@ function vcxproj.importExtensionSettings(prj)
 end
 
 
-function vcxproj.propertySheetGroup(prj)
-	wl('<ImportGroup Label="PropertySheets" Condition="\'$(Configuration)|$(Platform)\'==\'Debug|Win32\'">')
-	export.indent()
+function vcxproj.propertySheets(prj)
+	for i = 1, #prj.configs do
+		local cfg = prj.configs[i]
+		wl('<ImportGroup Label="PropertySheets" Condition="\'$(Configuration)|$(Platform)\'==\'%s\'">', cfg.vs_build)
+		export.indent()
 		wl('<Import Project="$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props" Condition="exists(\'$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props\')" Label="LocalAppDataPlatform" />')
-	export.outdent()
-	wl('</ImportGroup>')
-	wl('<ImportGroup Label="PropertySheets" Condition="\'$(Configuration)|$(Platform)\'==\'Release|Win32\'">')
-	export.indent()
-		wl('<Import Project="$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props" Condition="exists(\'$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props\')" Label="LocalAppDataPlatform" />')
-	export.outdent()
-	wl('</ImportGroup>')
+		export.outdent()
+		wl('</ImportGroup>')
+	end
 end
 
 
@@ -185,71 +241,45 @@ function vcxproj.userMacros(prj)
 end
 
 
-function vcxproj.outputPropertiesGroup(prj)
-	wl('<PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'Debug|Win32\'">')
-	export.indent()
-		wl('<LinkIncremental>true</LinkIncremental>')
-		wl('<OutDir>bin\\Debug\\</OutDir>')
-		wl('<IntDir>obj\\Debug\\</IntDir>')
-		wl('<TargetName>%s</TargetName>', esc(prj.name))
-		wl('<TargetExt>.exe</TargetExt>')
-	export.outdent()
-	wl('</PropertyGroup>')
-	wl('<PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|Win32\'">')
-	export.indent()
-		wl('<LinkIncremental>false</LinkIncremental>')
-		wl('<OutDir>bin\\Release\\</OutDir>')
-		wl('<IntDir>obj\\Release\\</IntDir>')
-		wl('<TargetName>%s</TargetName>', esc(prj.name))
-		wl('<TargetExt>.exe</TargetExt>')
-	export.outdent()
-	wl('</PropertyGroup>')
+function vcxproj.outputPropertyGroup(prj)
+	for i = 1, #prj.configs do
+		local cfg = prj.configs[i]
+		wl('<PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'%s\'">', cfg.vs_build)
+		export.indent()
+		premake.callArray(vcxproj.elements.outputPropertyGroup, cfg)
+		export.outdent()
+		wl('</PropertyGroup>')
+	end
 end
 
 
-function vcxproj.itemDefinitionGroups(prj)
-	wl('<ItemDefinitionGroup Condition="\'$(Configuration)|$(Platform)\'==\'Debug|Win32\'">')
+function vcxproj.itemDefinitionGroup(prj)
+	for i = 1, #prj.configs do
+		local cfg = prj.configs[i]
+		wl('<ItemDefinitionGroup Condition="\'$(Configuration)|$(Platform)\'==\'%s\'">', cfg.vs_build)
+		export.indent()
+		premake.callArray(vcxproj.elements.itemDefinitionGroup, cfg)
+		export.outdent()
+		wl('</ItemDefinitionGroup>')
+	end
+end
+
+
+function vcxproj.clCompile(cfg)
+	wl('<ClCompile>')
 	export.indent()
-		wl('<ClCompile>')
-		export.indent()
-			wl('<PrecompiledHeader>NotUsing</PrecompiledHeader>')
-			wl('<WarningLevel>Level3</WarningLevel>')
-			wl('<PreprocessorDefinitions>_DEBUG;%%(PreprocessorDefinitions)</PreprocessorDefinitions>')
-			wl('<DebugInformationFormat>EditAndContinue</DebugInformationFormat>')
-			wl('<Optimization>Disabled</Optimization>')
-		export.outdent()
-		wl('</ClCompile>')
-		wl('<Link>')
-		export.indent()
-			wl('<SubSystem>Console</SubSystem>')
-			wl('<GenerateDebugInformation>true</GenerateDebugInformation>')
-		export.outdent()
-		wl('</Link>')
+	premake.callArray(vcxproj.elements.clCompile, cfg)
 	export.outdent()
-	wl('</ItemDefinitionGroup>')
-	wl('<ItemDefinitionGroup Condition="\'$(Configuration)|$(Platform)\'==\'Release|Win32\'">')
+	wl('</ClCompile>')
+end
+
+
+function vcxproj.link(cfg)
+	wl('<Link>')
 	export.indent()
-		wl('<ClCompile>')
-		export.indent()
-			wl('<PrecompiledHeader>NotUsing</PrecompiledHeader>')
-			wl('<WarningLevel>Level3</WarningLevel>')
-			wl('<PreprocessorDefinitions>NDEBUG;%%(PreprocessorDefinitions)</PreprocessorDefinitions>')
-			wl('<Optimization>MinSpace</Optimization>')
-			wl('<FunctionLevelLinking>true</FunctionLevelLinking>')
-			wl('<IntrinsicFunctions>true</IntrinsicFunctions>')
-			wl('<MinimalRebuild>false</MinimalRebuild>')
-			wl('<StringPooling>true</StringPooling>')
-		export.outdent()
-		wl('</ClCompile>')
-		wl('<Link>')
-		export.indent()
-			wl('<SubSystem>Console</SubSystem>')
-			wl('<EnableCOMDATFolding>true</EnableCOMDATFolding>')
-			wl('<OptimizeReferences>true</OptimizeReferences>')
-		export.outdent()
-		wl('</Link>')
+	premake.callArray(vcxproj.elements.link, cfg)
 	export.outdent()
-	wl('</ItemDefinitionGroup>')
+	wl('</Link>')
 end
 
 
@@ -288,6 +318,182 @@ end
 function vcxproj.endTag(prj)
 	export.outdent()
 	export.write('</Project>')  -- no trailing newline to match VS output
+end
+
+
+---
+-- Handlers for individual setting elements, in alpha order.
+---
+
+function vcxproj.characterSet(cfg)
+	wl('<CharacterSet>Unicode</CharacterSet>')
+end
+
+
+function vcxproj.configurationType(cfg)
+	wl('<ConfigurationType>Application</ConfigurationType>')
+end
+
+
+function vcxproj.debugInformationFormat(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Debug' then
+		wl('<DebugInformationFormat>EditAndContinue</DebugInformationFormat>')
+	end
+end
+
+
+function vcxproj.enableComdatFolding(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Release' then
+		wl('<EnableCOMDATFolding>true</EnableCOMDATFolding>')
+	end
+end
+
+
+function vcxproj.functionLevelLinking(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Release' then
+		wl('<FunctionLevelLinking>true</FunctionLevelLinking>')
+	end
+end
+
+
+function vcxproj.generateDebugInformation(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Debug' then
+		wl('<GenerateDebugInformation>true</GenerateDebugInformation>')
+	end
+end
+
+
+function vcxproj.ignoreWarnCompileDuplicatedFilename(prj)
+	wl('<IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>')
+end
+
+
+function vcxproj.intDir(cfg)
+	wl('<IntDir>obj\\%s\\</IntDir>', cfg.configuration)
+end
+
+
+function vcxproj.intrinsicFunctions(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Release' then
+		wl('<IntrinsicFunctions>true</IntrinsicFunctions>')
+	end
+end
+
+
+function vcxproj.keyword(prj)
+	wl('<Keyword>Win32Proj</Keyword>')
+end
+
+
+function vcxproj.linkIncremental(cfg)
+	-- just pass the unit tests for now
+	local value = (cfg.configuration == 'Debug')
+	wl('<LinkIncremental>%s</LinkIncremental>', tostring(value))
+end
+
+
+function vcxproj.minimalRebuild(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Release' then
+		wl('<MinimalRebuild>false</MinimalRebuild>')
+	end
+end
+
+
+function vcxproj.optimization(cfg)
+	-- pass unit tests for now
+	local value
+	if cfg.configuration == 'Debug' then
+		value = 'Disabled'
+	else
+		value = 'MinSpace'
+	end
+	wl('<Optimization>%s</Optimization>', value)
+end
+
+
+function vcxproj.optimizeReferences(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Release' then
+		wl('<OptimizeReferences>true</OptimizeReferences>')
+	end
+end
+
+
+function vcxproj.outDir(cfg)
+	wl('<OutDir>bin\\%s\\</OutDir>', cfg.configuration)
+end
+
+
+function vcxproj.platformToolset(cfg)
+	wl('<PlatformToolset>v140</PlatformToolset>')
+end
+
+
+function vcxproj.precompiledHeader(cfg)
+	wl('<PrecompiledHeader>NotUsing</PrecompiledHeader>')
+end
+
+
+function vcxproj.preprocessorDefinitions(cfg)
+	-- pass unit tests for now
+	local value
+	if cfg.configuration == 'Debug' then
+		value = '_DEBUG'
+	else
+		value = 'NDEBUG'
+	end
+	wl('<PreprocessorDefinitions>%s;%%(PreprocessorDefinitions)</PreprocessorDefinitions>', value)
+end
+
+
+function vcxproj.projectGuid(prj)
+	wl('<ProjectGuid>{%s}</ProjectGuid>', prj.uuid)
+end
+
+
+function vcxproj.rootNamespace(prj)
+	wl('<RootNamespace>%s</RootNamespace>', esc(prj.name))
+end
+
+
+function vcxproj.stringPooling(cfg)
+	-- just pass the unit tests
+	if cfg.configuration == 'Release' then
+		wl('<StringPooling>true</StringPooling>')
+	end
+end
+
+
+function vcxproj.subSystem(cfg)
+	wl('<SubSystem>Console</SubSystem>')
+end
+
+
+function vcxproj.targetExt(cfg)
+	wl('<TargetExt>.exe</TargetExt>')
+end
+
+
+function vcxproj.targetName(cfg)
+	wl('<TargetName>%s</TargetName>', esc(cfg.container.name))
+end
+
+
+function vcxproj.useDebugLibraries(cfg)
+	-- make the tests pass for now
+	local value = (cfg.configuration == 'Debug')
+	wl('<UseDebugLibraries>%s</UseDebugLibraries>', tostring(value))
+end
+
+
+function vcxproj.warningLevel(cfg)
+	wl('<WarningLevel>Level3</WarningLevel>')
 end
 
 

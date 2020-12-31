@@ -1,4 +1,6 @@
+local premake = require('premake')
 local vstudio = require('vstudio')
+
 local vcxproj = vstudio.vcxproj
 
 local VsVcxProjectGuidTests = test.declare('VsVcxProjectGuidTests', 'vstudio')
@@ -9,7 +11,9 @@ function VsVcxProjectGuidTests.isSetFromProjectName()
 		project('ProjectA')
 	end)
 
-	local prj = vstudio.extractWorkspaces()[1].projects[1]
+	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
+	local prj = wks.projects[1]
+
 	vcxproj.projectGuid(prj)
 
 	test.capture [[

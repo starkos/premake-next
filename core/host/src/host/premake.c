@@ -76,6 +76,7 @@ static const luaL_Reg premake_functions[] = {
 
 static const luaL_Reg string_functions[] = {
 	{ "contains", pmk_string_contains },
+	{ "join", pmk_string_join },
 	{ "hash", pmk_string_hash },
 	{ "patternFromWildcards", pmk_string_patternFromWildcards },
 	{ "startsWith", pmk_string_startsWith },

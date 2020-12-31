@@ -171,6 +171,7 @@ int pmk_premake_locateScript(lua_State* L);
 /* String library extensions */
 
 int pmk_string_contains(lua_State* L);
+int pmk_string_join(lua_State* L);
 int pmk_string_hash(lua_State* L);
 int pmk_string_patternFromWildcards(lua_State* L);
 int pmk_string_startsWith(lua_State* L);

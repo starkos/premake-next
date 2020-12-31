@@ -1,3 +1,7 @@
+---
+-- Visual Studio solution exporter.
+---
+
 local export = require('export')
 local path = require('path')
 local premake = require('premake')
@@ -30,15 +34,15 @@ sln.elements.global = function (wks)
 end
 
 
-function sln.filename(wks)
-	return path.join(wks.location, wks.filename) .. '.sln'
-end
-
-
 function sln.export(wks)
 	export.eol('\r\n')
 	export.indentString('\t')
 	premake.callArray(sln.elements.solution, wks)
+end
+
+
+function sln.filename(wks)
+	return path.join(wks.location, wks.filename) .. '.sln'
 end
 
 
@@ -73,7 +77,7 @@ end
 function sln.global(wks)
 	wl('Global')
 	export.indent()
-	premake.callArray(sln.elements.global)
+	premake.callArray(sln.elements.global, wks)
 	export.outdent()
 	wl('EndGlobal')
 end
@@ -82,8 +86,13 @@ end
 function sln.solutionConfiguration(wks)
 	wl('GlobalSection(SolutionConfigurationPlatforms) = preSolution')
 	export.indent()
-		wl('Debug|Win32 = Debug|Win32')
-		wl('Release|Win32 = Release|Win32')
+
+	local configs = wks.configs
+	for i = 1, #configs do
+		local cfg = configs[i]
+		wl('%s = %s', cfg.vs_identifier, cfg.vs_identifier)
+	end
+
 	export.outdent()
 	wl('EndGlobalSection')
 end
@@ -92,10 +101,23 @@ end
 function sln.projectConfiguration(wks)
 	wl('GlobalSection(ProjectConfigurationPlatforms) = postSolution')
 	export.indent()
-		wl('{42B5DBC6-AE1F-903D-F75D-41E363076E92}.Debug|Win32.ActiveCfg = Debug|Win32')
-		wl('{42B5DBC6-AE1F-903D-F75D-41E363076E92}.Debug|Win32.Build.0 = Debug|Win32')
-		wl('{42B5DBC6-AE1F-903D-F75D-41E363076E92}.Release|Win32.ActiveCfg = Release|Win32')
-		wl('{42B5DBC6-AE1F-903D-F75D-41E363076E92}.Release|Win32.Build.0 = Release|Win32')
+
+	local wksConfigs = wks.configs
+
+	local projects = wks.projects
+	for i = 1, #projects do
+		local prj = projects[i]
+
+		for i = 1, #wksConfigs do
+			local cfg = wksConfigs[i]
+
+			-- TODO: need to map configurations here
+
+			wl('{%s}.%s.ActiveCfg = %s', prj.uuid, cfg.vs_identifier, cfg.vs_build)
+			wl('{%s}.%s.Build.0 = %s', prj.uuid, cfg.vs_identifier, cfg.vs_build)
+		end
+	end
+
 	export.outdent()
 	wl('EndGlobalSection')
 end

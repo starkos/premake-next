@@ -181,12 +181,14 @@ function State.fetch(self, fieldName)
 	-- If this is a request for one of the scope values which was used to seed this query, return
 	-- that exact value without collecting any additional values from the query results. Otherwise,
 	-- go fetch from the blocks returned by the query.
-	local field = Field.get(fieldName)
-	local initialValues = state._initialValues
-	if field.isScope and initialValues[field] ~= nil then
-		value = initialValues[field]
-	else
-		value = _buildValue(state._blocks, field) or initialValues[field] or Field.defaultValue(field)
+	if Field.exists(fieldName) then
+		local field = Field.get(fieldName)
+		local initialValues = state._initialValues
+		if field.isScope and initialValues[field] ~= nil then
+			value = initialValues[field]
+		else
+			value = _buildValue(state._blocks, field) or initialValues[field] or Field.defaultValue(field)
+		end
 	end
 
 	if value == nil then
