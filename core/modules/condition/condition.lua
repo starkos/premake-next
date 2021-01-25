@@ -118,6 +118,40 @@ end
 
 
 ---
+-- Checks a list of scopes to see if any is fully tested by this condition.
+--
+-- Given a scope `{ workspaces='W1', projects='P1' }`, this test will pass and return
+-- `true` if the condition has clauses which test `workspaces` and `projects`. It will
+-- fail and return false if no clause tests either of those fields.
+--
+-- This test does not check to see if the scope's values pass the test, only that there
+-- *is* a test. Use `Condition.matchesScopeAndValues()` for a full test.
+---
+
+function Condition.doesTestScopeValues(self, scopes)
+	local fieldsTested = self._fieldsTested
+
+	for i = 1, #scopes do
+		local scope = scopes[i]
+		local isScopeMatch = true
+
+		for field in pairs(scope) do
+			if not fieldsTested[field] then
+				isScopeMatch = false
+				break
+			end
+		end
+
+		if isScopeMatch then
+			return true
+		end
+	end
+
+	return false
+end
+
+
+---
 -- Compares this condition to a list of scopes, and a collection of values.
 --
 -- @param values
@@ -148,6 +182,7 @@ function Condition.matchesScopeAndValues(self, values, scopes, matchOnNil)
 		for field in pairs(scope) do
 			if not fieldsTested[field] then
 				isScopeMatch = false
+				break
 			end
 		end
 
