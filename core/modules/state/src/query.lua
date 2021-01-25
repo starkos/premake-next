@@ -8,7 +8,6 @@ local Query = {}
 -- result values for  block tests
 local ADD = Block.ADD
 local REMOVE = Block.REMOVE
-local IGNORE = 'IGNORE'
 local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
 local UNKNOWN = 'UNKNOWN'
 
@@ -101,6 +100,24 @@ function Query.evaluate(state)
 		})
 	end
 
+	-- Optimization: blocks that don't match any of our scopes can be eliminated right up
+	-- front. I don't have enough in place to performance test this yet. Probably a small
+	-- hit for projects and workspaces, good win for file-level configuration.
+
+	for i = 1, #sourceBlocks do
+		local blockResult = blockResults[i]
+		local sourceBlock = blockResult.sourceBlock
+		if sourceBlock.operation == ADD then
+			local condition = sourceBlock.condition
+			if not Condition.doesTestScopeValues(condition, globalScopes) then
+				blockResult.globalOperation = OUT_OF_SCOPE
+			end
+			if not Condition.doesTestScopeValues(condition, targetScopes) then
+				blockResult.targetOperation = OUT_OF_SCOPE
+			end
+		end
+	end
+
 	-- Optimization: only fields actually mentioned by block conditions are aggregated
 	local _allFieldsTested = Condition.allFieldsTested()
 
@@ -117,9 +134,11 @@ function Query.evaluate(state)
 		local targetOperation = blockResult.targetOperation
 		local globalOperation = blockResult.globalOperation
 
-		-- if we've already made a decision on this block, skip over it
 		if globalOperation ~= UNKNOWN then
+
+			-- We've already made a decision on this block, can skip over it now
 			i = i + 1
+
 		else
 			local blockCondition = sourceBlock.condition
 			local blockOperation = sourceBlock.operation
@@ -133,6 +152,17 @@ function Query.evaluate(state)
 
 			local function _testBlock(sourceBlock, blockCondition, blockOperation, globalScopes, globalValues, targetScopes, targetValues)
 				if blockOperation == ADD then
+					-- local isMatch, reason = Condition.matchesScopeAndValues(blockCondition, globalValues, globalScopes)
+					-- if not isMatch then
+					-- 	return reason, reason
+					-- end
+
+					-- isMatch, reason = Condition.matchesScopeAndValues(blockCondition, targetValues, targetScopes)
+					-- if not isMatch then
+					-- 	return ADD, UNKNOWN
+					-- end
+
+
 					if not Condition.matchesScopeAndValues(blockCondition, globalValues, globalScopes) then
 						return UNKNOWN, UNKNOWN
 					end
@@ -169,7 +199,7 @@ function Query.evaluate(state)
 							return REMOVE, REMOVE
 						else
 							-- inherited scope match
-							return REMOVE, IGNORE
+							return REMOVE, OUT_OF_SCOPE
 						end
 					end
 
