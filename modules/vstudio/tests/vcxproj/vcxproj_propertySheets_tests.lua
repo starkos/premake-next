@@ -3,7 +3,7 @@ local vstudio = require('vstudio')
 
 local vcxproj = vstudio.vcxproj
 
-local VsVcxPropertySheetsTests = test.declare('VsVcxPropertySheetsTests', 'vstudio-vcxproj', 'vstudio')
+local VsVcxPropertySheetsTests = test.declare('VsVcxPropertySheetsTests', 'vcxproj', 'vstudio')
 
 
 function VsVcxPropertySheetsTests.setup()

@@ -25,7 +25,7 @@ int pmk_buffer_write(lua_State* L)
 }
 
 
-int pmk_buffer_writeln(lua_State* L)
+int pmk_buffer_writeLine(lua_State* L)
 {
 	pmk_Buffer* b = (pmk_Buffer*)lua_touserdata(L, 1);
 

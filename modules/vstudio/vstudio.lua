@@ -3,36 +3,48 @@ local State = require('state')
 
 local vstudio = {}
 
+vstudio.Config = doFile('./src/config.lua', vstudio)
+vstudio.Project = doFile('./src/project.lua', vstudio)
+vstudio.Workspace = doFile('./src/workspace.lua', vstudio)
 
--- load in this module's components
-local _MODULES = {  'Config', 'Project', 'Workspace', 'sln', 'vcxproj' }
-for _, module in pairs(_MODULES) do
-	vstudio[module] = doFile('./src/' .. module:lower() .. '.lua', vstudio)
-end
+vstudio.sln = doFile('./src/sln.lua', vstudio)
+vstudio.vcxproj = doFile('./src/vcxproj.lua', vstudio)
+vstudio.vcxproj.filters = doFile('./src/vcxproj.filters.lua', vstudio)
+vstudio.vcxproj.utils =  doFile('./src/vcxproj.utils.lua', vstudio)
 
 
 local _VERSION_INFO = {
 	['2010'] = {
+		filterToolsVersion = '4.0',
 		solutionFileFormatVersion = '11',
-		toolsVersion = "4.0",
+		toolsVersion = '4.0',
 		visualStudioVersion = '2010',
 	},
 	['2012'] = {
+		filterToolsVersion = '4.0',
 		solutionFileFormatVersion = '12',
-		toolsVersion = "4.0",
+		toolsVersion = '4.0',
 		visualStudioVersion = '2012'
 	},
-	['2015'] = {
+	['2013'] = {
+		filterToolsVersion = '4.0',
 		solutionFileFormatVersion = '12',
-		toolsVersion = "14.0",
+		toolsVersion = '12.0'
+	},
+	['2015'] = {
+		filterToolsVersion = '4.0',
+		solutionFileFormatVersion = '12',
+		toolsVersion = '14.0',
 		visualStudioVersion = '14'
 	},
 	['2017'] = {
+		filterToolsVersion = '4.0',
 		solutionFileFormatVersion = '12',
-		toolsVersion = "15.0",
+		toolsVersion = '15.0',
 		visualStudioVersion = '15'
 	},
 	['2019'] = {
+		filterToolsVersion = '4.0',
 		solutionFileFormatVersion = '12',
 		visualStudioVersion = 'Version 16',
 	}
@@ -65,9 +77,8 @@ end
 
 
 ---
--- Specifies which version of Visual Studio is being targeted. Causes
--- `vstudio.currentVersion` to be set to a table of version-specific
--- properties for use by the exporter logic.
+-- Specifies which version of Visual Studio is being targeted. Causes `vstudio.targetVersion` to
+-- be set to a table of version-specific properties for use by the exporter logic.
 --
 -- @param version
 --    The target version, i.e. '2015' or '2019'.
@@ -80,7 +91,7 @@ function vstudio.setTargetVersion(version)
 		error(string.format('Unsupported Visual Studio version "%s"', version))
 	end
 
-	vstudio.currentVersion = versionInfo
+	vstudio.targetVersion = versionInfo
 end
 
 

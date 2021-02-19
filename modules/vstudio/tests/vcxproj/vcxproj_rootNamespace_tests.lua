@@ -3,7 +3,7 @@ local vstudio = require('vstudio')
 
 local vcxproj = vstudio.vcxproj
 
-local VsVcxRootNamespaceTests = test.declare('VsVcxRootNamespaceTests', 'vstudio')
+local VsVcxRootNamespaceTests = test.declare('VsVcxRootNamespaceTests', 'vcxproj', 'vstudio')
 
 
 function VsVcxRootNamespaceTests.isSetToProjectName()

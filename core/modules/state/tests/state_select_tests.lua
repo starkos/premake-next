@@ -384,6 +384,7 @@ end
 ---
 
 function StateSelectTests.select_config_fromGlobal_inherit_preservesScope()
+	_LOG_PREMAKE_QUERIES = true
 	local cfg = _global:select({ configurations = 'Debug' }):withInheritance()
 	test.isEqual({ 'Debug' }, cfg.configurations)
 end

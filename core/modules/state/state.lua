@@ -11,9 +11,11 @@
 -- which specifically test for `projects = "Project1"` will be considered.
 ---
 
+local array = require('array')
 local Block = require('block')
 local Condition = require('condition')
 local Field = require('field')
+local immutability = require('immutability')
 local Store = require('store')
 
 local State = declareType('State')
@@ -41,6 +43,10 @@ State.__newindex = function(self, key, value)
 end
 
 
+---
+-- Iterate over a list of blocks; collect and return the values for `field`.
+---
+
 local function _buildValue(blocks, field)
 	local result = nil
 
@@ -54,42 +60,6 @@ local function _buildValue(blocks, field)
 			else
 				result = Field.removeValues(field, result, blockValue)
 			end
-		end
-	end
-
-	return result
-end
-
-
-local function _mergeValues(...)
-	local result = {}
-
-	local n = select('#', ...)
-	for i = 1, n do
-		local values = select(i, ...) or _EMPTY
-		for field, value in pairs(values) do
-			result[field] = Field.mergeValues(field, result[field], value)
-		end
-	end
-
-	return result
-end
-
-
----
--- Converts a "normal" Lua table into a data block: keys are Field instances,
--- values use the correct data structure for the field type. This transformation
--- allows values passed in (scope, initial values) to be handle the same way as
--- data blocks received from the store.
----
-
-local function _normalizeDataBlock(block)
-	local result = {}
-
-	if block ~= nil then
-		for key, value in pairs(block) do
-			local field = Field.get(key)
-			result[field] = Field.mergeValues(field, _EMPTY, value)
 		end
 	end
 
@@ -131,7 +101,7 @@ end
 function State.new(store, initialState)
 	return _new({
 		_sourceBlocks = Store.blocks(store),
-		_initialValues = _normalizeDataBlock(initialState),
+		_initialValues = Field.receiveAllValues(initialState),
 
 		_localScopes = _EMPTY_SCOPE,
 		_targetScopes = _EMPTY_SCOPE,
@@ -169,7 +139,7 @@ function State.fetch(self, fieldName)
 	local state = self[State]
 
 	-- Early out if we tried to fetch this value previously and determined that it was never set
-	if state._unsetValues[fieldName] then
+	if state._unsetValues[fieldName] ~= nil then
 		return nil
 	end
 
@@ -181,8 +151,8 @@ function State.fetch(self, fieldName)
 	-- If this is a request for one of the scope values which was used to seed this query, return
 	-- that exact value without collecting any additional values from the query results. Otherwise,
 	-- go fetch from the blocks returned by the query.
-	if Field.exists(fieldName) then
-		local field = Field.get(fieldName)
+	local field = Field.tryGet(fieldName)
+	if field ~= nil then
 		local initialValues = state._initialValues
 		if field.isScope and initialValues[field] ~= nil then
 			value = initialValues[field]
@@ -217,14 +187,16 @@ end
 
 function _select(self, localScopes)
 	local container = self[State]
+
+	-- make sure we're using the "clean" instance so we don't get values from parent
 	if container._noInheritanceVersion ~= nil then
 		container = container._noInheritanceVersion[State]
 	end
 
 	local initialValues = container._initialValues
 	for i = 1, #localScopes do
-		localScopes[i] = _normalizeDataBlock(localScopes[i])
-		initialValues = _mergeValues(localScopes[i], initialValues)
+		localScopes[i] = Field.receiveAllValues(localScopes[i])
+		initialValues = Field.receiveAllValues(localScopes[i], initialValues)
 	end
 
 	-- always look in container for scope blocks; better name for this?
@@ -364,7 +336,7 @@ function State.withInheritance(self)
 		return self
 	end
 
-	local targetScopes = table.joinArrays(state._targetScopes, state._container._targetScopes)
+	local targetScopes = array.join(state._targetScopes, state._container._targetScopes)
 
 	-- Build inheriting version of this query
 	state._withInheritanceVersion = _new(table.mergeKeys(state, {

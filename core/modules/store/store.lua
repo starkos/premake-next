@@ -107,7 +107,7 @@ end
 
 function Store.addValue(self, field, value)
 	local block = _getBlockFor(self, Block.ADD)
-	Block.store(block, field, value)
+	Block.receive(block, field, value)
 	return self
 end
 
@@ -118,7 +118,7 @@ end
 
 function Store.removeValue(self, field, value)
 	local block = _getBlockFor(self, Block.REMOVE)
-	Block.store(block, field, value)
+	Block.receive(block, field, value)
 	return self
 end
 

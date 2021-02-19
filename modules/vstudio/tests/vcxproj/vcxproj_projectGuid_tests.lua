@@ -3,7 +3,7 @@ local vstudio = require('vstudio')
 
 local vcxproj = vstudio.vcxproj
 
-local VsVcxProjectGuidTests = test.declare('VsVcxProjectGuidTests', 'vstudio')
+local VsVcxProjectGuidTests = test.declare('VsVcxProjectGuidTests', 'vcxproj', 'vstudio')
 
 
 function VsVcxProjectGuidTests.isSetFromProjectName()

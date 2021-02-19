@@ -18,7 +18,7 @@ end
 
 
 ---
--- `default()`
+-- Default value should be `nil`.
 ---
 
 function StringFieldTests.default_isNil()
@@ -27,7 +27,7 @@ end
 
 
 ---
--- `matches()`
+-- Match should pass exact values and fail mismatches.
 ---
 
 function StringFieldTests.matches_isTrue_onExactMatch()
@@ -48,7 +48,7 @@ end
 
 
 ---
--- `mergeValues()` should replace any existing value
+-- Merge should replace any existing value.
 ---
 
 function StringFieldTests.mergeValues_replacesValue()
@@ -56,22 +56,23 @@ function StringFieldTests.mergeValues_replacesValue()
 end
 
 
---
--- Should raise an error is an object is assigned to a string field.
---
+---
+-- Receive should replace any existing value.
+---
 
-function StringFieldTests.mergeValues_raisesError_onTableValue()
-	ok, err = pcall(function ()
-		testField:mergeValues(nil, { 'a', 'b' })
-	end)
-	test.isFalse(ok)
+function StringFieldTests.receiveValues_replacesValue()
+	test.isEqual('y', testField:receiveValues('x', 'y'))
 end
 
 
 ---
--- `removeValues()` clears value
+-- Remove clears the value on a match.
 ---
 
-function StringFieldTests.removeValues_doesNothing()
+function StringFieldTests.removeValues_returnsNil_onMatch()
 	test.isNil(testField:removeValues('x', 'x'))
+end
+
+function StringFieldTests.removeValues_doesNothing_onNotMatch()
+	test.isEqual('x', testField:removeValues('x', 'y'))
 end

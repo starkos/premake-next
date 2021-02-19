@@ -101,6 +101,9 @@ Matcher* pmk_matchStart(const char* directory, const char* pattern)
 
 int pmk_matchNext(Matcher* matcher)
 {
+	if (matcher->handle == NULL)
+		return (FALSE);
+
 	matcher->entry = readdir(matcher->handle);
 	while (matcher->entry != NULL) {
 		const char* name = matcher->entry->d_name;

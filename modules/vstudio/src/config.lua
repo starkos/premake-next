@@ -3,6 +3,7 @@
 ---
 
 local dom = require('dom')
+local State = require('state')
 
 local vstudio = select(1, ...)
 
@@ -75,6 +76,9 @@ function Config.extract(container, selector)
 	else
 		cfg.vs_build = string.format('%s|%s', cfg.configuration, cfg.vs_architecture)
 	end
+
+	-- Configurations inherit most values from project, but files should be kept separated
+	cfg.files = State.withoutInheritance(cfg).files
 
 	return cfg
 end

@@ -30,7 +30,7 @@ static const luaL_Reg buffer_functions[] = {
 	{ "close", pmk_buffer_close },
 	{ "toString", pmk_buffer_toString },
 	{ "write", pmk_buffer_write },
-	{ "writeln", pmk_buffer_writeln },
+	{ "writeLine", pmk_buffer_writeLine },
 	{ NULL, NULL }
 };
 
@@ -49,6 +49,7 @@ static const luaL_Reg os_functions[] = {
 	{ "matchNext", pmk_os_matchNext },
 	{ "matchStart", pmk_os_matchStart },
 	{ "mkdir", pmk_os_mkdir },
+	{ "touch", pmk_os_touch },
 	{ "uuid", pmk_os_uuid },
 	{ NULL, NULL }
 };
@@ -76,6 +77,7 @@ static const luaL_Reg premake_functions[] = {
 
 static const luaL_Reg string_functions[] = {
 	{ "contains", pmk_string_contains },
+	{ "endsWith", pmk_string_endsWith },
 	{ "join", pmk_string_join },
 	{ "hash", pmk_string_hash },
 	{ "patternFromWildcards", pmk_string_patternFromWildcards },

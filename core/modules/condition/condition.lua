@@ -231,8 +231,10 @@ end
 
 function Condition.merge(left, right)
 	local fieldsTested = table.mergeKeys(left._fieldsTested, right._fieldsTested)
-	local rootTest = table.joinArrays(left._rootTest, right._rootTest)
-	rootTest._op = OP_AND
+	local rootTest = {
+		_op = OP_AND,
+		left._rootTest, right._rootTest
+	}
 
 	return instantiateType(Condition, {
 		_fieldsTested = fieldsTested,

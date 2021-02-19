@@ -7,8 +7,8 @@ local export = require('export')
 local testing = select(1, ...)
 
 
-function testing.capture(expected)
-	local actual = export.captured() .. '\n'
+function testing.capture(expected, actual)
+	actual = (actual or export.captured()) .. '\n'
 
 	-- create line-by-line iterators for both values
 	local iActual = actual:gmatch('(.-)\n')
@@ -20,7 +20,7 @@ function testing.capture(expected)
 	local expectLine = iExpect()
 	while expectLine do
 		if expectLine ~= actualLine then
-			testing.fail('(%d) expected:\n%s\n...but was:\n%s', lineNum, expectLine, actualLine)
+			testing.fail('(%d) expected:\n%s\n...but was:\n%s', lineNum, expectLine, actualLine or '(nil)')
 		end
 
 		lineNum = lineNum + 1
@@ -45,7 +45,7 @@ function testing.fail(format, ...)
 		if arg == nil then
 			arg = '(nil)'
 		elseif type(arg) == 'table' then
-			arg[i] = string.format('{%s}', table.concat(arg[i], ', '))
+			arg[i] = table.toString(arg)
 		end
 	end
 
@@ -104,5 +104,13 @@ end
 function testing.isTrue(actual)
 	if not actual then
 		testing.fail('expected true but was false')
+	end
+end
+
+
+function testing.noOutput()
+	local actual = export.captured()
+	if actual ~= '' then
+		m.fail("expected no output, but was %s", actual);
 	end
 end

@@ -3,7 +3,7 @@ local vstudio = require('vstudio')
 
 local vcxproj = vstudio.vcxproj
 
-local VsVcxProjectConfigsTests = test.declare('VsVcxProjectConfigsTests', 'vstudio-vcxproj', 'vstudio')
+local VsVcxProjectConfigsTests = test.declare('VsVcxProjectConfigsTests', 'vcxproj', 'vstudio')
 
 
 function VsVcxProjectConfigsTests.setup()

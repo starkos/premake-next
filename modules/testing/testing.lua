@@ -2,6 +2,7 @@
 -- A unit testing framework for Premake/Lua.
 ---
 
+local array = require('array')
 local Callback = require('callback')
 local export = require('export')
 local options = require('options')
@@ -111,7 +112,7 @@ end
 
 
 function testing.loadAllTests()
-	local suites = table.joinArrays(
+	local suites = array.join(
 		os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', '*_tests.lua')),
 		os.matchFiles(path.join(_PREMAKE.MAIN_SCRIPT_DIR, '**', 'test_*.lua'))
 	)
@@ -304,7 +305,7 @@ function testing.declare(suiteName, ...)
 		end
 	})
 
-	suite._aliases = table.joinArrays(suiteName, suiteName .. 'Tests', ...)
+	suite._aliases = array.of(suiteName, suiteName .. 'Tests', ...)
 
 	-- restore script vars state before running test functions
 	suite._runner = Callback.new(function(fn)

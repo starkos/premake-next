@@ -466,3 +466,26 @@ function StateRemoveTests.workspaceAdds_projectRemoves_ignoresUnsetValues()
 	local prj = wks:select({ projects = 'Project1' })
 	test.isEqual({ 'B' }, prj.defines)
 end
+
+
+---
+-- Found this one while testing removeFiles(); could probably be folded into one of the
+-- tests above but I don't want to mess with what's working. If a value is both added
+-- and removed "above" my target scope, I shouldn't see any of the removed values at all.
+---
+
+function StateRemoveTests.projectsAdds_projectRemoves_doesNotAddToConfig()
+	workspace('Workspace1', function ()
+		configurations { 'Debug', 'Release' }
+		project('Project1', function ()
+			defines { 'A' }
+			removeDefines { 'A' }
+		end)
+	end)
+
+	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
+	local prj = wks:select({ projects = 'Project1' }):withInheritance()
+	local cfg = prj:select({ configurations = 'Debug' })
+
+	test.isEqual({}, cfg.defines)
+end

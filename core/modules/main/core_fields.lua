@@ -22,18 +22,18 @@ Field.register({
 
 Field.register({
 	name = 'baseDir',
-	kind = 'path'
+	kind = 'file'
 })
 
 Field.register({
 	name = 'configurations',
-	kind = 'list:string',
+	kind = 'set:string',
 	isScope = true
 })
 
 Field.register({
 	name = 'defines',
-	kind = 'list:string'
+	kind = 'set:string'
 })
 
 Field.register({
@@ -54,6 +54,11 @@ Field.register({
 })
 
 Field.register({
+	name = 'files',
+	kind = 'set:file'
+})
+
+Field.register({
 	name = 'kind',
 	kind = 'string',
 	allowed = {
@@ -64,21 +69,20 @@ Field.register({
 	}
 })
 
-
 Field.register({
 	name = 'location',
-	kind = 'path'
+	kind = 'file'
 })
 
 Field.register({
 	name = 'platforms',
-	kind = 'list:string',
+	kind = 'set:string',
 	isScope = true
 })
 
 Field.register({
 	name = 'projects',
-	kind = 'list:string',
+	kind = 'set:string',
 	isScope = true
 })
 
@@ -120,6 +124,6 @@ Field.register({
 
 Field.register({
 	name = 'workspaces',
-	kind = 'list:string',
+	kind = 'set:string',
 	isScope = true
 })

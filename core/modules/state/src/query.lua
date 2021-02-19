@@ -5,7 +5,7 @@ local Store = require('store')
 
 local Query = {}
 
--- result values for  block tests
+-- result values for block tests
 local ADD = Block.ADD
 local REMOVE = Block.REMOVE
 local OUT_OF_SCOPE = 'OUT_OF_SCOPE'
@@ -76,8 +76,8 @@ function Query.evaluate(state)
 	-- scope, if all levels of inheritance were enabled. When a request is made to remove a value,
 	-- we check this global state to see if the value has actually been set, and make the appropriate
 	-- corrections to ensure the change gets applied correctly.
-	local targetValues = table.shallowCopy(state._initialValues)
-	local globalValues = table.shallowCopy(state._initialValues)
+	local targetValues = Field.receiveAllValues(state._initialValues)
+	local globalValues = Field.receiveAllValues(state._initialValues)
 
 	local sourceBlocks = state._sourceBlocks
 	local targetScopes = state._targetScopes
@@ -85,7 +85,7 @@ function Query.evaluate(state)
 
 	-- _debug('TARGET SCOPES:', table.toString(targetScopes))
 	-- _debug('GLOBAL SCOPES:', table.toString(globalScopes))
-	-- _debug('INITIAL VALUES:', table.toString(targetValues)
+	-- _debug('INITIAL VALUES:', table.toString(targetValues))
 
 	-- The list of incoming source blocks is shared and shouldn't be modified. Set up a parallel
 	-- list to keep track of which blocks we've tested, and the per-block test results.
@@ -119,7 +119,7 @@ function Query.evaluate(state)
 	end
 
 	-- Optimization: only fields actually mentioned by block conditions are aggregated
-	local _allFieldsTested = Condition.allFieldsTested()
+	local allFieldsTested = Condition.allFieldsTested()
 
 	-- Set up to iterate the list of blocks multiple times. Each time new values are
 	-- added or removed from the target state, any blocks that had been previously skipped
@@ -152,17 +152,6 @@ function Query.evaluate(state)
 
 			local function _testBlock(sourceBlock, blockCondition, blockOperation, globalScopes, globalValues, targetScopes, targetValues)
 				if blockOperation == ADD then
-					-- local isMatch, reason = Condition.matchesScopeAndValues(blockCondition, globalValues, globalScopes)
-					-- if not isMatch then
-					-- 	return reason, reason
-					-- end
-
-					-- isMatch, reason = Condition.matchesScopeAndValues(blockCondition, targetValues, targetScopes)
-					-- if not isMatch then
-					-- 	return ADD, UNKNOWN
-					-- end
-
-
 					if not Condition.matchesScopeAndValues(blockCondition, globalValues, globalScopes) then
 						return UNKNOWN, UNKNOWN
 					end
@@ -203,12 +192,18 @@ function Query.evaluate(state)
 						end
 					end
 
+					-- Okay, doesn't apply to me, but does it apply to one of my parent containers (something "above" me), or
+					-- a sibling container (something "next to" or "below" me). If the block matches something in my global
+					-- scope then I can assumed that it will be handled before I even see it.
+					if Condition.matchesScopeAndValues(blockCondition, globalValues, globalScopes) then
+						return OUT_OF_SCOPE, REMOVE
+					end
+
 					-- So...this block passed the "soft" match against the global values, but failed against my
 					-- specific scoping. That means it is intended for a sibling of the target scope: a different
 					-- project, configuration, etc. from the one that is currently being built. In order to keep
 					-- things additive, that means I find myself in the uncomfortable position of having to *add*
 					-- the value in, rather than remove...see notes in test suite and (eventually) the README.
-
 					return REMOVE, ADD
 				end
 			end
@@ -230,19 +225,22 @@ function Query.evaluate(state)
 
 				for field, removePatterns in pairs(sourceBlock.data) do
 					local currentGlobalValues = _fetchFieldValue(field, blockResults)
-
-					-- Run the remove patterns from the block against the currently set values and see what we get;
-					-- add back any removed values that aren't already in the local state.
-					local _, removedValues = Field.removeValues(field, currentGlobalValues, removePatterns)
 					local currentTargetValues = targetValues[field] or _EMPTY
+
+					-- Run the block's remove patterns against the accumulated global state. Check to see if any of
+					-- the removed values are *not* present in the current target state. Those are the values that now
+					-- need to be added back in to the target state. I iterate and add them individually because in
+					-- this case we don't want to add duplicates even if the field would otherwise allow it.
+					local removedValues
+					currentGlobalValues[field], removedValues = Field.removeValues(field, currentGlobalValues, removePatterns)
 
 					for i = 1, #removedValues do
 						local value = removedValues[i]
-						-- in this case, don't want to add duplicates even if the field would otherwise allow it
 						if not Field.matches(field, currentTargetValues, value) then
-							Block.store(newAddBlock, field, value)
+							Block.receive(newAddBlock, field, value)
 						end
 					end
+
 				end
 
 				-- Insert the new block into my result list
@@ -253,17 +251,18 @@ function Query.evaluate(state)
 					sourceBlock = newAddBlock
 				})
 
-				targetValues = _accumulateValuesFromBlock(_allFieldsTested, targetValues, newAddBlock, ADD)
+				targetValues = _accumulateValuesFromBlock(allFieldsTested, targetValues, newAddBlock, ADD)
 
 			elseif targetOperation ~= UNKNOWN then
 				blockResult.targetOperation = targetOperation
-				targetValues = _accumulateValuesFromBlock(_allFieldsTested, targetValues, sourceBlock, targetOperation)
+				targetValues = _accumulateValuesFromBlock(allFieldsTested, targetValues, sourceBlock, targetOperation)
 			end
 
 			if globalOperation ~= UNKNOWN then
 				blockResult.globalOperation = globalOperation -- TODO: do I need to store this? Once values have been processed at the global scope I'm done?
-				globalValues = _accumulateValuesFromBlock(_allFieldsTested, globalValues, sourceBlock, globalOperation)
+				globalValues = _accumulateValuesFromBlock(allFieldsTested, globalValues, sourceBlock, globalOperation)
 			end
+
 
 			-- If accumulated state changed rerun previously skipped blocks to see if they should now be enabled
 			if globalOperation ~= UNKNOWN then

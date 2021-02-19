@@ -4,6 +4,7 @@
 -- for a simple string value, or `list:string` for a list of strings.
 ---
 
+local array = require('array')
 local Callback = require('callback')
 
 local Field = declareType('Field')
@@ -13,14 +14,16 @@ local _registeredFields = {}
 local _onFieldAddedCallbacks = {}
 local _onFieldRemovedCallbacks = {}
 
-local _kinds = {}
-
 local _processors = {
 	default = {},
 	merge = {},
+	pattern = {},
+	receive = {},
 	remove = {},
 	match = {}
 }
+
+Field.kinds = {}
 
 
 ---
@@ -59,11 +62,11 @@ local function _fetchProcessor(operation, kind)
 
 	local thisKind, nextKind = string.splitOnce(kind, ':', true)
 
-	local outerProcessor = _kinds[thisKind][operation]
+	local outerProcessor = Field.kinds[thisKind][operation]
 	local innerProcessor = _fetchProcessor(operation, nextKind)
 
-	processor = function (field, currentValue, incomingValues, ...)
-		return outerProcessor(field, currentValue, incomingValues, innerProcessor, ...)
+	processor = function (field, ...)
+		return outerProcessor(field, innerProcessor, ...)
 	end
 
 	_processors[operation][kind] = processor
@@ -137,12 +140,14 @@ end
 ---
 
 function Field.registerKind(name, operations)
+	-- Make sure that all required operations are present
 	for op in pairs(_processors) do
 		if type(operations[op]) ~= 'function' then
 			return nil, 'missing handler for "' .. op .. '" operation'
 		end
 	end
-	_kinds[name] = operations
+
+	Field.kinds[name] = operations
 end
 
 
@@ -183,7 +188,7 @@ end
 
 
 ---
--- Fetch a field by name.
+-- Fetch a field by name. Raises an error if the field does not exist.
 ---
 
 function Field.get(fieldName)
@@ -196,23 +201,31 @@ end
 
 
 ---
--- Tests a pattern against a field's values.
+-- Tests one of more patterns against a field's values.
 ---
 
-function Field.matches(self, value, pattern, plain)
-	return _processors.match[self.kind](self, value, pattern, plain)
+function Field.matches(self, currentValue, patterns, plain)
+	local matchValues = _processors.match[self.kind]
+	local expandPattern = _processors.pattern[self.kind]
+
+	return array.forEachFlattened(patterns, function (pattern)
+		if plain == nil then
+			pattern, plain = expandPattern(self, pattern)
+		end
+		return matchValues(self, currentValue, pattern, plain)
+	end)
 end
 
 
 ---
--- Merge value(s) to a field.
+-- Merge one set of field values into another.
 --
--- For simple values, the new value will replace the old one. For collections,
--- the new values will be appeneded.
+-- Unlike `receiveValues()`, merging assumes that the incoming values have already been
+-- filtered and processed, and can simply be added as-is.
 ---
 
-function Field.mergeValues(self, currentValue, newValue)
-	return _processors.merge[self.kind](self, currentValue, newValue)
+function Field.mergeValues(self, currentValue, newValues)
+	return _processors.merge[self.kind](self, currentValue, newValues)
 end
 
 
@@ -235,11 +248,76 @@ end
 
 
 ---
+-- Send new value(s) to a field.
+--
+-- For simple values, the new value will replace the old one. For collections, the
+-- new values will be added to the collection. Incoming values may be filtered or
+-- processed, depending on the field kind.
+---
+
+function Field.receiveValues(self, currentValue, newValues)
+	return _processors.receive[self.kind](self, currentValue, newValues)
+end
+
+
+---
+-- Merges one or more blocks containing key-value pairs of fields and their
+-- corresponding values. Returns a new block with all field values merged.
+---
+
+function Field.receiveAllValues(...)
+	local result = {}
+
+	local n = select('#', ...)
+	for i = 1, n do
+		local block = select(i, ...) or _EMPTY
+		for key, value in pairs(block) do
+			local field
+
+			if typeOf(key) == 'Field' then
+				field = key
+			elseif type(key) == 'string' then
+				field = Field.tryGet(key)
+			end
+
+			if field ~= nil then
+				result[field] = Field.receiveValues(field, result[field], value)
+			end
+		end
+	end
+
+	return result
+end
+
+
+---
 -- Remove value(s) from a field.
 ---
 
-function Field.removeValues(self, currentValue, patternsToRemove)
-	return _processors.remove[self.kind](self, currentValue, patternsToRemove)
+function Field.removeValues(self, currentValue, patterns)
+	local allRemovedValues = {}
+
+	local removeValues = _processors.remove[self.kind]
+	local expandPattern = _processors.pattern[self.kind]
+
+	array.forEachFlattened(patterns, function (pattern)
+		if plain == nil then
+			pattern, plain = expandPattern(self, pattern)
+		end
+		currentValue, removedValues = removeValues(self, currentValue, pattern, plain)
+		array.appendArrays(allRemovedValues, removedValues)
+	end)
+
+	return currentValue, allRemovedValues
+end
+
+
+---
+-- Returns a field definition by name, or `nil` if no such field exists.
+---
+
+function Field.tryGet(fieldName)
+	return _registeredFields[fieldName]
 end
 
 
@@ -252,8 +330,9 @@ function Field.__tostring(self)
 end
 
 
+doFile('./src/kind_file.lua', Field)
 doFile('./src/kind_list.lua', Field)
-doFile('./src/kind_path.lua', Field)
+doFile('./src/kind_set.lua', Field)
 doFile('./src/kind_string.lua', Field)
 
 return Field

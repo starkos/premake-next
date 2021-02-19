@@ -6,5 +6,5 @@ function TableContainsTests.contains_isTrue_onValueIsPresent()
 end
 
 function TableContainsTests.contains_isFalse_onValueNotPresent()
-	test.isFalse( table.contains({ 'one', 'two', 'three' }, 'four') )
+	test.isFalse(table.contains({ 'one', 'two', 'three' }, 'four') )
 end
