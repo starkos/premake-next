@@ -9,8 +9,17 @@ local Store = require('store')
 local premake = _PREMAKE.premake
 
 _PREMAKE.VERSION = '6.0.0-next'
-_PREMAKE.COPYRIGHT = 'Copyright (C) 2002-2020 Jason Perkins and the Premake Project'
+_PREMAKE.COPYRIGHT = 'Copyright (c) 2002-2021 Jason Perkins and the Premake Project'
 _PREMAKE.WEBSITE = 'https://github.com/starkos/premake-next'
+
+premake.C_HEADER_EXTENSIONS = { '.h', '.inl' }
+premake.C_SOURCE_EXTENSIONS = { '.c', '.s' }
+premake.CXX_HEADER_EXTENSIONS = { '.hpp', '.hxx' }
+premake.CXX_SOURCE_EXTENSIONS = { '.cc', '.cpp', '.cxx', '.c++' }
+premake.OBJC_HEADER_EXTENSIONS = { '.hh' }
+premake.OBJC_SOURCE_EXTENSIONS = { '.m', '.mm' }
+premake.WIN_RESOURCE_EXTENSIONS = { '.rc' }
+
 
 local _env = {}
 local _store = Store.new()
@@ -68,6 +77,20 @@ function premake.eol(newValue)
 end
 
 
+---
+-- Calls an exporter function and, if the returned value is different than what is currently
+-- stored in `exportPath`, overwrites it with the new contents.
+--
+-- @param object
+--    The object to be exported.
+-- @param exportPath
+--    The path to the exported file.
+-- @param exporter
+--    The exporter function to be called; receives `object` as its only parameter.
+-- @returns
+--    True if a new value was written to `exportPath`; false otherwise.
+---
+
 function premake.export(obj, exportPath, exporter)
 	local contents = export.capture(function ()
 		exporter(obj)
@@ -75,6 +98,9 @@ function premake.export(obj, exportPath, exporter)
 
 	if not io.compareFile(exportPath, contents) then
 		io.writeFile(exportPath, contents)
+		return true
+	else
+		return false
 	end
 end
 

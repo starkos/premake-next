@@ -10,7 +10,7 @@ local xml = require('xml')
 local vstudio = select(1, ...)
 
 local esc = xml.escape
-local wl = export.writeln
+local wl = export.writeLine
 
 local sln = {}
 
@@ -53,8 +53,8 @@ end
 
 
 function sln.header()
-	wl('Microsoft Visual Studio Solution File, Format Version %d.00', vstudio.currentVersion.solutionFileFormatVersion)
-	wl('# Visual Studio %s', vstudio.currentVersion.visualStudioVersion)
+	wl('Microsoft Visual Studio Solution File, Format Version %d.00', vstudio.targetVersion.solutionFileFormatVersion)
+	wl('# Visual Studio %s', vstudio.targetVersion.visualStudioVersion)
 end
 
 

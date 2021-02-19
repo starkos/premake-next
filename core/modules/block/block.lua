@@ -38,9 +38,9 @@ function Block.acceptsOperation(self, operation)
 end
 
 
-function Block.store(self, field, value)
+function Block.receive(self, field, values)
 	local data = self.data
-	data[field] = Field.mergeValues(field, data[field], value)
+	data[field] = Field.receiveValues(field, data[field], values)
 end
 
 

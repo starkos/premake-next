@@ -1,40 +1,79 @@
+---
+-- A "list" is an array of values. Unlike a set, the same value can appear multiple times.
+---
+
+local array = require('array')
+
 local Field = select(1, ...)
 
-Field.registerKind('list', {
-	default = function()
-		return _EMPTY
-	end,
+
+local function default()
+	return {}
+end
 
 
-	merge = function(field, currentValues, newValues)
-		return table.joinArrays(currentValues or _EMPTY, newValues)
-	end,
-
-
-	remove = function(field, currentValues, patternsToRemove)
-		local result = {}
-		local removed = {}
-
-		table.forEach(currentValues or _EMPTY, function(value)
-			for i = 1, #patternsToRemove do
-				if string.match(value, patternsToRemove[i]) then
-					table.insert(removed, value)
-					return -- value is removed; skip to next value
-				end
-			end
-			-- was not removed; add to new results
-			table.insert(result, value)
-		end)
-
-		return result, removed
-	end,
-
-
-	match = function(field, values, pattern, innerMatch, plain)
-		for i = 1, #values do
-			if innerMatch(field, values[i], pattern, plain) then
-				return true
-			end
+local function match(field, inner, currentValues, pattern, plain)
+	for i = 1, #currentValues do
+		local value = currentValues[i]
+		if inner(field, value, pattern, plain) then
+			return value
 		end
 	end
+	return nil
+end
+
+
+local function merge(field, inner, currentValues, incomingValues, plain)
+	currentValues = currentValues or {}
+	return array.appendArrays(currentValues, incomingValues)
+end
+
+
+local function pattern(field, inner, pattern)
+	return inner(field, pattern)
+end
+
+
+local function receive(field, inner, currentValues, incomingValues, plain)
+	currentValues = currentValues or {}
+
+	array.forEachFlattened(incomingValues, function (value)
+		value = inner(field, nil, value, plain)
+		if type(value) == 'table' then
+			array.appendArrays(currentValues, value)
+		else
+			table.insert(currentValues, value)
+		end
+	end)
+
+	return currentValues
+end
+
+
+local function remove(field, inner, currentValues, pattern, plain)
+	currentValues = currentValues or {}
+	local removedValues = {}
+
+	local i = 1
+	while i <= #currentValues do
+		local value = currentValues[i]
+		if inner(field, value, pattern, plain) == nil then
+			table.insert(removedValues, value)
+			table.remove(currentValues, i)
+		else
+			i = i + 1
+		end
+	end
+
+	return currentValues, removedValues
+end
+
+
+Field.registerKind('list', {
+	default = default,
+	match = match,
+	merge = merge,
+	pattern = pattern,
+	receive = receive,
+	remove = remove
 })

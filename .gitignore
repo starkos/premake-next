@@ -39,4 +39,5 @@ Makefile
 *.bbprojectsettings
 Unix Worksheet.worksheet
 project.bbprojectdata
+.vs
 .vscode

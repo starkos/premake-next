@@ -14,9 +14,13 @@
 void pmk_getDirectory(char* result, const char* path)
 {
 	int len = 0;
-	const char* ptr = strrchr(path, '/');
 
-	if (ptr == path) {  /* path == "/" */
+	/* Find the last '/' or '\' in the path */
+	const char* ptr = strrchr(path, '/');
+	if (ptr == NULL)
+		 ptr = strrchr(path, '\\');
+
+	if (ptr == path) {  /* if (path == "/") */
 		len = 1;
 	} else if (ptr != NULL) {
 		len = (ptr - path);

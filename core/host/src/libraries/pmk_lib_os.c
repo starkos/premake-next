@@ -100,6 +100,20 @@ int pmk_os_mkdir(lua_State* L)
 }
 
 
+int pmk_os_touch(lua_State* L)
+{
+	const char* path = luaL_checkstring(L, 1);
+
+	if (pmk_touchFile(path) != OKAY) {
+		lua_pushnil(L);
+		lua_pushfstring(L, "unable to touch '%s'", path);
+	}
+
+	lua_pushboolean(L, TRUE);
+	return (1);
+}
+
+
 int pmk_os_uuid(lua_State* L)
 {
 	char uuid[38];

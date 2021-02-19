@@ -2,24 +2,6 @@
 -- Overrides and extensions to Lua's `table` library.
 ---
 
----
--- Call a function on each element of an array, and collect unique return values
--- into a new array.
----
-
-function table.collectUnique(self, func)
-	local result = {}
-
-	for i = 1, #self do
-		local newValue = func(self[i])
-		if newValue ~= nil and not table.contains(result, newValue) then
-			table.insert(result, newValue)
-		end
-	end
-
-	return result
-end
-
 
 ---
 -- Does the table contain the specified value?
@@ -36,43 +18,6 @@ end
 
 
 ---
--- Call the provided function once per array element.
----
-
-function table.forEach(self, func)
-	for i = 1, #self do
-		func(self[i])
-	end
-end
-
-
----
--- Appends all array values from one or more tables, producing a new array.
--- Simple (non-table) values may also be included; these are appended in the
--- order they are encountered in the argument list.
----
-
-function table.joinArrays(...)
-	local result = {}
-
-	local n = select('#', ...)
-	for i = 1, n do
-		local value = select(i, ...)
-
-		if type(value) == 'table' then
-			for j = 1, #value do
-				result[#result + 1] = value[j]
-			end
-		else
-			result[#result + 1] = value
-		end
-	end
-
-	return result
-end
-
-
----
 -- Return an array of keys used in a table.
 ---
 
@@ -84,15 +29,6 @@ function table.keys(self)
 	end
 
 	return keys
-end
-
-
----
--- Return the last value in an array.
----
-
-function table.last(self)
-	return self[#self]
 end
 
 

@@ -3,6 +3,7 @@
 ---
 
 local dom = require('dom')
+local path = require('path')
 local premake = require('premake')
 
 local vstudio = select(1, ...)
@@ -48,6 +49,7 @@ function Project.extract(wks, name)
 	prj.workspace = wks
 
 	prj.exportPath = vstudio.vcxproj.filename(prj)
+	prj.baseDirectory = path.getDirectory(prj.exportPath)
 	prj.uuid = prj.uuid or os.uuid(prj.name)
 
 	prj.configs = vstudio.Config.extractAll(prj)
@@ -61,7 +63,8 @@ end
 ---
 
 function Project.export(self)
-	premake.export(self, self.exportPath, vstudio.vcxproj.export)
+	-- TODO: branch by project type; only supporting .vcxproj at the moment
+	vstudio.vcxproj.export(self)
 end
 
 

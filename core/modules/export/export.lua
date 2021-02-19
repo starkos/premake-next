@@ -8,6 +8,23 @@ local _indentLevel = 0
 local _indentString = '\t'
 
 
+function export.append(...)
+	if _captureBuffer == nil then
+		error('no active capture', 0)
+	end
+
+	if select('#', ...) > 0 then
+		Buffer.write(_captureBuffer, string.format(...))
+	end
+end
+
+
+function export.appendLine(...)
+	export.append(...)
+	Buffer.write(_captureBuffer, _eol)
+end
+
+
 function export.capture(fn)
 	local oldBuffer = _captureBuffer
 	local oldEol = _eol
@@ -70,7 +87,7 @@ function export.writeUtf8Bom()
 end
 
 
-local function _write(...)
+function export.write(...)
 	if _captureBuffer == nil then
 		error('no active capture', 0)
 	end
@@ -82,11 +99,8 @@ local function _write(...)
 end
 
 
-export.write = _write
-
-
-function export.writeln(...)
-	_write(...)
+function export.writeLine(...)
+	export.write(...)
 	Buffer.write(_captureBuffer, _eol)
 end
 

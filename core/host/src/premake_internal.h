@@ -80,6 +80,7 @@ void pmk_bufferPuts(pmk_Buffer* b, const char* ptr, size_t len);
 int  pmk_chdir(const char* path);
 int  pmk_compareFile(const char* path, const char* contents);
 int  pmk_doFile(lua_State* L, const char* filename);
+int  pmk_endsWith(const char* haystack, const char* needle);
 void pmk_escapeXml(char* result, const char* value);
 void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
@@ -112,8 +113,11 @@ int  pmk_pathKind(const char* path);
 int  pmk_patternFromWildcards(char* result, int maxLen, const char* value, int isPath);
 int  pmk_pcall(lua_State* L, int nargs, int nresults);
 const char** pmk_searchPaths(lua_State* L);
+int  pmk_startsWith(const char* haystack, const char* needle);
+int  pmk_touchFile(const char* path);
 void pmk_translatePath(char* result, const char* value, const char separator);
 void pmk_translatePathInPlace(char* value, const char sep);
+int  pmk_unrollStrings(lua_State* L, int (*func)(const char*, const char*));
 int  pmk_uuid(char* result, const char* value);
 int  pmk_writeFile(const char* path, const char* contents);
 
@@ -135,7 +139,7 @@ int pmk_buffer_new(lua_State* L);
 int pmk_buffer_close(lua_State* L);
 int pmk_buffer_toString(lua_State* L);
 int pmk_buffer_write(lua_State* L);
-int pmk_buffer_writeln(lua_State* L);
+int pmk_buffer_writeLine(lua_State* L);
 
 /* OS library extensions */
 
@@ -147,6 +151,7 @@ int pmk_os_matchName(lua_State* L);
 int pmk_os_matchNext(lua_State* L);
 int pmk_os_matchStart(lua_State* L);
 int pmk_os_mkdir(lua_State* L);
+int pmk_os_touch(lua_State* L);
 int pmk_os_uuid(lua_State* L);
 
 /* Path library functions */
@@ -171,6 +176,7 @@ int pmk_premake_locateScript(lua_State* L);
 /* String library extensions */
 
 int pmk_string_contains(lua_State* L);
+int pmk_string_endsWith(lua_State* L);
 int pmk_string_join(lua_State* L);
 int pmk_string_hash(lua_State* L);
 int pmk_string_patternFromWildcards(lua_State* L);

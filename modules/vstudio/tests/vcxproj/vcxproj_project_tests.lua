@@ -2,7 +2,7 @@ local vstudio = require('vstudio')
 
 local vcxproj = vstudio.vcxproj
 
-local VsVcxProjectTests = test.declare('VsVcxProjectTests', 'vstudio')
+local VsVcxProjectTests = test.declare('VsVcxProjectTests', 'vcxproj', 'vstudio')
 
 
 function VsVcxProjectTests.on2010()
@@ -19,6 +19,15 @@ function VsVcxProjectTests.on2012()
 	vcxproj.project()
 	test.capture [[
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	]]
+end
+
+
+function VsVcxProjectTests.on2013()
+	vstudio.setTargetVersion(2013)
+	vcxproj.project()
+	test.capture [[
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	]]
 end
 

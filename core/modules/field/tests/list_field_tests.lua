@@ -18,15 +18,16 @@ end
 
 
 ---
--- `default()`
+-- Default value is an empty array.
 ---
 
 function ListFieldTests.default_isEmptyList()
 	test.isEqual({}, testField:defaultValue())
 end
 
+
 ---
--- matches()
+-- Match...
 ---
 
 function ListFieldTests.matches_isTrue_onMatch()
@@ -43,27 +44,52 @@ end
 
 
 ---
--- `mergeValues()` should replace simple values, or append to collections.
+-- Merge...
 ---
 
 function ListFieldTests.mergeValues_addsValue_onNilCollection()
-	local newValue = testField:mergeValues(nil, 'a')
+	local newValue = testField:mergeValues(nil, {'a'})
 	test.isEqual({ 'a' }, newValue)
 end
 
 function ListFieldTests.mergeValues_addsValue_onEmptyCollection()
-	local newValue = testField:mergeValues({}, 'a')
+	local newValue = testField:mergeValues({}, {'a'})
 	test.isEqual({ 'a' }, newValue)
 end
 
 function ListFieldTests.mergeValues_addsValue_onExistingCollection()
-	local newValue = testField:mergeValues({ 'a', 'b' }, 'c')
+	local newValue = testField:mergeValues({ 'a', 'b' }, {'c'})
 	test.isEqual({ 'a', 'b', 'c' }, newValue)
 end
 
 
 ---
--- `removeValues()`
+-- Receive...
+---
+
+function ListFieldTests.receiveValues_addsValue_onNilCollection()
+	local newValue = testField:receiveValues(nil, 'a')
+	test.isEqual({ 'a' }, newValue)
+end
+
+function ListFieldTests.receiveValues_addsValue_onEmptyCollection()
+	local newValue = testField:receiveValues({}, 'a')
+	test.isEqual({ 'a' }, newValue)
+end
+
+function ListFieldTests.receiveValues_addsValue_onExistingCollection()
+	local newValue = testField:receiveValues({ 'a', 'b' }, 'c')
+	test.isEqual({ 'a', 'b', 'c' }, newValue)
+end
+
+function ListFieldTests.receiveValues_flattensNestedArrays()
+	local newValue = testField:receiveValues(nil, { {'a'}, { {'b'}, 'c' } })
+	test.isEqual({ 'a', 'b', 'c' }, newValue)
+end
+
+
+---
+-- Removes...
 ---
 
 function ListFieldTests.removeValues_removes_onMatchingValue()

@@ -17,6 +17,12 @@ int pmk_string_contains(lua_State* L)
 }
 
 
+int pmk_string_endsWith(lua_State* L)
+{
+	return (pmk_unrollStrings(L, pmk_endsWith));
+}
+
+
 int pmk_string_join(lua_State* L)
 {
 	char buffer[PATH_MAX] = { '\0' };
@@ -68,15 +74,5 @@ int pmk_string_patternFromWildcards(lua_State* L)
 
 int pmk_string_startsWith(lua_State* L)
 {
-	const char* haystack = luaL_optstring(L, 1, NULL);
-	const char* needle = luaL_optstring(L, 2, NULL);
-
-	if (haystack && needle) {
-		size_t nlen = strlen(needle);
-		int doesStartWith = (strncmp(haystack, needle, nlen) == 0);
-		lua_pushboolean(L, doesStartWith);
-		return (1);
-	}
-
-	return (0);
+	return (pmk_unrollStrings(L, pmk_startsWith));
 }
