@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="https://premake.github.io/" target="blank"><img src="https://premake.github.io/premake-logo.png" height="200" width="200" alt="Premake" /></a>
+  <a href="https://premake.github.io/" target="blank"><img src="https://premake.github.io/img/premake-logo.png" height="200" width="200" alt="Premake" /></a>
 </p>
 
 # Premake Next
 
 An exploratory take on new ideas and approaches for the [Premake build tool](https://premake.github.io/).
 
-:radioactive: ** This repository is no longer maintaned!** :radioactive:
+:radioactive: **This repository is no longer maintaned!** :radioactive:
 
 Come find me on the `6.x` branch of [premake-core](https://github.com/premake/premake-core) for the latest work.
 
