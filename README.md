@@ -6,6 +6,12 @@
 
 An exploratory take on new ideas and approaches for the [Premake build tool](https://premake.github.io/).
 
+:radioactive: ** This repository is no longer maintaned!** :radioactive:
+
+Come find me on the `6.x` branch of [premake-core](https://github.com/premake/premake-core) for the latest work.
+
+----
+
 ## What’s going on here?
 
 I’m trying out new ideas for Premake (see **[“Why “next”?](#why-next)**, below).
