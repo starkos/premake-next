@@ -7,26 +7,8 @@
 
 int pmk_path_getAbsolute(lua_State* L)
 {
-	char buffer[PATH_MAX];
-
 	const char* relativeTo = luaL_optstring(L, 2, NULL);
-
-	if (lua_istable(L, 1)) {
-		lua_newtable(L);
-		int n = lua_rawlen(L, 1);
-		for (int i = 1; i <= n; ++i) {
-			lua_rawgeti(L, 1, i);
-			pmk_getAbsolutePath(buffer, lua_tostring(L, -1), relativeTo);
-			lua_pop(L, 1);
-			lua_pushstring(L, buffer);
-			lua_rawseti(L, -2, i);
-		}
-	} else {
-		pmk_getAbsolutePath(buffer, luaL_checkstring(L, 1), relativeTo);
-		lua_pushstring(L, buffer);
-	}
-
-	return (1);
+	return (pmk_mapStrings(L, 1, relativeTo, pmk_getAbsolutePath));
 }
 
 
@@ -87,25 +69,15 @@ int pmk_path_getKind(lua_State* L)
 
 int pmk_path_getRelative(lua_State* L)
 {
-	char buffer[PATH_MAX];
-
 	const char* basePath = luaL_checkstring(L, 1);
-	const char* targetPath = luaL_checkstring(L, 2);
-	pmk_getRelativePath(buffer, basePath, targetPath);
-	lua_pushstring(L, buffer);
-	return (1);
+	return (pmk_mapStrings(L, 2, basePath, pmk_getRelativePath));
 }
 
 
 int pmk_path_getRelativeFile(lua_State* L)
 {
-	char buffer[PATH_MAX];
-
-	const char* baseFile = luaL_checkstring(L, 1);
-	const char* targetFile = luaL_checkstring(L, 2);
-	pmk_getRelativeFile(buffer, baseFile, targetFile);
-	lua_pushstring(L, buffer);
-	return (1);
+	const char* basePath = luaL_checkstring(L, 1);
+	return (pmk_mapStrings(L, 2, basePath, pmk_getRelativeFile));
 }
 
 
@@ -149,27 +121,6 @@ int pmk_path_normalize(lua_State* L)
 
 int pmk_path_translate(lua_State* L)
 {
-	char buffer[PATH_MAX];
-
-	const char* separator = luaL_optstring(L, 2, NULL);
-	if (separator == NULL) {
-		separator = "\\";
-	}
-
-	if (lua_istable(L, 1)) {
-		lua_newtable(L);
-		int n = lua_rawlen(L, 1);
-		for (int i = 1; i <= n; ++i) {
-			lua_rawgeti(L, 1, i);
-			pmk_translatePath(buffer, lua_tostring(L, -1), separator[0]);
-			lua_pop(L, 1);
-			lua_pushstring(L, buffer);
-			lua_rawseti(L, -2, i);
-		}
-	} else {
-		pmk_translatePath(buffer, luaL_checkstring(L, 1), separator[0]);
-		lua_pushstring(L, buffer);
-	}
-
-	return (1);
+	const char* separator = luaL_optstring(L, 2, "\\");
+	return (pmk_mapStrings(L, 1, separator, pmk_translatePath));
 }

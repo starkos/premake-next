@@ -58,7 +58,8 @@ vcxproj.elements = {
 		return {
 			vcxproj.precompiledHeader,
 			vcxproj.warningLevel,
-			vcxproj.preprocessorDefinitions,
+			vcxproj.clCompilePreprocessorDefinitions,
+			vcxproj.clCompileAdditionalIncludeDirectories,
 			vcxproj.debugInformationFormat,
 			vcxproj.optimization,
 			vcxproj.functionLevelLinking,
@@ -126,8 +127,11 @@ vcxproj.categories = {
 		match = function (file)
 			return string.endsWith(file, vcxproj.SOURCE_FILES)
 		end,
-		emit = function (file)
-			-- TODO: implement per-file configurations
+		elements = function (cfg)
+			return {
+				vcxproj.clCompilePreprocessorDefinitions,
+				vcxproj.clCompileAdditionalIncludeDirectories
+			}
 		end
 	},
 	{
@@ -135,8 +139,9 @@ vcxproj.categories = {
 		match = function (file)
 			return string.endsWith(file, '.hlsl')
 		end,
-		emit = function (file)
+		elements = function (cfg)
 			-- TODO: implement per-file configurations
+			return _EMPTY
 		end
 	},
 	{
@@ -144,8 +149,9 @@ vcxproj.categories = {
 		match = function (file)
 			return string.endsWith(file, vcxproj.RESOURCE_FILES)
 		end,
-		emit = function (file)
+		elements = function (cfg)
 			-- TODO: implement per-file configurations
+			return _EMPTY
 		end
 	},
 	{
@@ -153,8 +159,9 @@ vcxproj.categories = {
 		match = function (file)
 			return string.endsWith(file, '.idl')
 		end,
-		emit = function (file)
+		elements = function (cfg)
 			-- TODO: implement per-file configurations
+			return _EMPTY
 		end
 	},
 	{
@@ -162,8 +169,9 @@ vcxproj.categories = {
 		match = function (file)
 			return string.endsWith(file, '.asm')
 		end,
-		emit = function (file)
+		elements = function (cfg)
 			-- TODO: implement per-file configurations
+			return _EMPTY
 		end
 	},
 	{
@@ -171,8 +179,9 @@ vcxproj.categories = {
 		match = function (file)
 			return string.endsWith(file, '.gif', '.jpg', '.jpe', '.png', '.bmp', '.dib', '.tif', '.wmf', '.ras', '.eps', '.pcx', '.pcd', '.tga', '.dds')
 		end,
-		emit = function (file)
+		elements = function (cfg)
 			-- TODO: implement per-file configurations
+			return _EMPTY
 		end
 	},
 	{
@@ -191,21 +200,27 @@ vcxproj.categories = {
 
 
 ---
--- Emit an individual setting element, with an optional configuration condition.
+-- Emit an individual setting element.
 --
 -- @param tag
 --    The setting element tag, e.g. 'WarningLevel'.
 -- @param cfg
---    The configuration currently being exported.
+--    The configuration currently being exported. If the configuration represents
+--    file-level settings, a `Condition` attribute will be added to the element to
+--    target that build and platform. IF the configuration represents project-level
+--    settings no `Condition` will be added.
 -- @param value
 --    The setting value for the element, e.g. 'Level3'.
 ---
 
 local function _element(tag, cfg, value)
 	export.write('<%s', tag)
-	if cfg.vs_build ~= nil then
-		export.append(' Condition="$(Configuration)|$(Platform)"=="%s"', cfg.vs_build)
+
+	-- file level settings must target a specific build configuration
+	if cfg.file ~= nil then
+		export.append(' Condition="\'$(Configuration)|$(Platform)\'==\'%s\'"', cfg.vs_build)
 	end
+
 	export.appendLine('>%s</%s>', value, tag)
 end
 
@@ -251,9 +266,9 @@ end
 ---
 
 function vcxproj.prepare(prj)
-	prj.allSourceFiles = vcxproj.utils.collectAllSourceFiles(prj)
-	prj.categorizedSourceFiles = vcxproj.utils.categorizeSourceFiles(prj)
-	prj.virtualSourceTree = vcxproj.utils.buildVirtualSourceTree(prj)
+	local files = vcxproj.utils.collectAllSourceFiles(prj)
+	prj.categorizedSourceFiles = vcxproj.utils.categorizeSourceFiles(prj, files)
+	prj.virtualSourceTree = vcxproj.utils.buildVirtualSourceTree(prj, files)
 	return prj
 end
 
@@ -263,7 +278,6 @@ end
 ---
 
 function vcxproj.cleanup(prj)
-	prj.allSourceFiles = nil
 	prj.categorizedSourceFiles = nil
 	prj.virtualSourceTree = nil
 end
@@ -439,16 +453,20 @@ end
 ---
 
 function vcxproj.files(prj)
-	local categorizedFiles = vcxproj.utils.categorizeSourceFiles(prj)
+	local categorizedFiles = prj.categorizedSourceFiles
+
 	for ci = 1, #categorizedFiles do
 		local category = vcxproj.categories[ci]
+
 		local files = categorizedFiles[ci]
 		if #files > 0 then
 			wl('<ItemGroup>')
 			export.indent()
+
 			for fi = 1, #files do
 				vcxproj.emitFileItem(prj, category, files[fi])
 			end
+
 			export.outdent()
 			wl('</ItemGroup>')
 		end
@@ -459,18 +477,30 @@ end
 function vcxproj.emitFileItem(prj, category, file)
 	local settings
 
-	if category.emit ~= nil then
+	-- If this file category supports per-file settings, drill down and fetch those. Some categories
+	-- (eg. "ClInclude", "None") don't support per-file settings; skip this step if so.
+	if category.elements ~= nil then
 		settings = export.capture(function ()
-			-- TODO: select project-level file cfg & emit
+			export.indent()
 
+			-- Visual Studio doesn't support project-wide per-file settings; instead each setting
+			-- must be listed out for every build configuration to which it applies.  If it *did*
+			-- support project-wide per-file settings, they would go here. Instead, jump right into
+			-- iterating the build configurations and drilling down.
 			for i = 1, #prj.configs do
 				local cfg = prj.configs[i]
-				if prj.files[file] or cfg.files[file] then
-					-- TODO: select config level file cfg & emit
+
+				if not prj.files[file] and not cfg.files[file] then
+					-- this file is part of some other configuration, but not this one
+					wl('<ExcludedFromBuild Condition="\'$(Configuration)|$(Platform)\'==\'%s\'">true</ExcludedFromBuild>', cfg.vs_build)
 				else
-					_element('ExcludedFromBuild', cfg, 'true')
+					-- fetch any scripted settings for this file and spit them out
+					local fileCfg = vstudio.fetchFileConfig(cfg, file)
+					premake.callArray(category.elements, fileCfg)
 				end
 			end
+
+			export.outdent()
 		end)
 	end
 
@@ -480,7 +510,7 @@ function vcxproj.emitFileItem(prj, category, file)
 		wl('<%s Include="%s" />', category.tag, file)
 	else
 		wl('<%s Include="%s">', category.tag, file)
-		wl(settings)
+		export.appendLine('%s', settings)
 		wl('</%s>', category.tag)
 	end
 end
@@ -512,11 +542,45 @@ end
 
 
 ---
+-- Shared logic for those elements which need it.
+---
+
+function vcxproj.additionalIncludeDirectories(cfg, paths)
+	if #paths > 0 then
+		local relativePaths = path.translate(path.getRelative(cfg.project.baseDirectory, paths))
+		local value = string.format('%s;%%(AdditionalIncludeDirectories)', table.concat(relativePaths, ';'))
+		_element('AdditionalIncludeDirectories', cfg, value)
+	end
+end
+
+
+function vcxproj.preprocessorDefinitions(cfg, symbols, escapeQuotes)
+	if #symbols > 0 then
+		local value = string.format('%s;%%(PreprocessorDefinitions)', table.concat(symbols, ';'))
+		if escapeQuotes then
+			value = value:gsub('"', '\\"')
+		end
+		_element('PreprocessorDefinitions', cfg, value)
+	end
+end
+
+
+---
 -- Handlers for individual setting elements, in alpha order.
 ---
 
 function vcxproj.characterSet(cfg)
 	wl('<CharacterSet>Unicode</CharacterSet>')
+end
+
+
+function vcxproj.clCompileAdditionalIncludeDirectories(cfg)
+	vcxproj.additionalIncludeDirectories(cfg, cfg.includeDirs)
+end
+
+
+function vcxproj.clCompilePreprocessorDefinitions(cfg)
+	vcxproj.preprocessorDefinitions(cfg, cfg.defines, false)
 end
 
 
@@ -621,24 +685,12 @@ end
 
 
 function vcxproj.platformToolset(cfg)
-	wl('<PlatformToolset>v140</PlatformToolset>')
+	wl('<PlatformToolset>%s</PlatformToolset>', vstudio.targetVersion.platformToolset)
 end
 
 
 function vcxproj.precompiledHeader(cfg)
 	wl('<PrecompiledHeader>NotUsing</PrecompiledHeader>')
-end
-
-
-function vcxproj.preprocessorDefinitions(cfg)
-	-- pass unit tests for now
-	local value
-	if cfg.configuration == 'Debug' then
-		value = '_DEBUG'
-	else
-		value = 'NDEBUG'
-	end
-	wl('<PreprocessorDefinitions>%s;%%(PreprocessorDefinitions)</PreprocessorDefinitions>', value)
 end
 
 
@@ -671,7 +723,7 @@ end
 
 
 function vcxproj.targetName(cfg)
-	wl('<TargetName>%s</TargetName>', esc(cfg.container.name))
+	wl('<TargetName>%s</TargetName>', esc(cfg.project.name))
 end
 
 

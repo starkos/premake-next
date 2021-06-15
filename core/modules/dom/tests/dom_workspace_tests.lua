@@ -1,5 +1,5 @@
 local premake = require('premake')
-local Workspace = require('dom').Workspace
+local dom = require('dom')
 
 local DomWorkspaceTests = test.declare('DomWorkspaceTests', 'dom')
 
@@ -8,8 +8,7 @@ local _wks
 
 function DomWorkspaceTests.setup()
 	workspace('MyWorkspace')
-
-	_wks = Workspace.new(premake.newState():select({ workspaces = 'MyWorkspace' }))
+	_wks = dom.Workspace.new(dom.Root.new():select({ workspaces = 'MyWorkspace' }))
 end
 
 

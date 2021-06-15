@@ -21,8 +21,8 @@ int pmk_touchFile(const char* path)
 		FILETIME fileTime;
 		HANDLE fileHandle;
 		wchar_t wide_path[PATH_MAX];
-		if (MultiByteToWideChar(CP_UTF8, 0, dst, -1, wide_path, PATH_MAX) == 0)
-			return (FALSE)
+		if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wide_path, PATH_MAX) == 0)
+			return (FALSE);
 
 		fileHandle = CreateFileW(wide_path, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (fileHandle == NULL)

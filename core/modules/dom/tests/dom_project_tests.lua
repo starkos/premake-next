@@ -1,5 +1,5 @@
 local premake = require('premake')
-local Project = require('dom').Project
+local dom = require('dom')
 
 local DomProjectTests = test.declare('DomProjectTests', 'dom')
 
@@ -8,8 +8,7 @@ local _prj
 
 function DomProjectTests.setup()
 	project('MyProject')
-
-	_prj = Project.new(premake.newState():select({ projects = 'MyProject' }))
+	_prj = dom.Project.new(dom.Root.new():select({ projects = 'MyProject' }))
 end
 
 

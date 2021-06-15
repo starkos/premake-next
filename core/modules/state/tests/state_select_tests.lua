@@ -216,19 +216,19 @@ end
 
 function StateSelectTests.select_config_fromWorkspaceAndGlobal()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local cfg = wks:select({ configurations = 'Debug' }):include(_global)
+	local cfg = wks:select({ configurations = 'Debug' }):fromScopes(_global)
 	test.isEqual({ 'GLOB_DEBUG', 'WKS1_DEBUG' }, cfg.defines)
 end
 
 function StateSelectTests.select_configOrPlatform_fromWorkspaceAndGlobal()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local cfg = wks:selectAny({ configurations = 'Debug', platforms='macOS' }):include(_global)
+	local cfg = wks:selectAny({ configurations = 'Debug', platforms='macOS' }):fromScopes(_global)
 	test.isEqual({ 'GLOB_DEBUG', 'GLOB_MAC', 'GLOB_DEBUG_MAC', 'WKS1_DEBUG', 'WKS1_MAC', 'WKS1_DEBUG_MAC' }, cfg.defines)
 end
 
 function StateSelectTests.select_configAndPlatform_fromWorkspaceAndGlobal()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local cfg = wks:select({ configurations = 'Debug', platforms='macOS' }):include(_global)
+	local cfg = wks:select({ configurations = 'Debug', platforms='macOS' }):fromScopes(_global)
 	test.isEqual({ 'GLOB_DEBUG_MAC', 'WKS1_DEBUG_MAC' }, cfg.defines)
 end
 
@@ -242,7 +242,7 @@ end
 
 function StateSelectTests.select_config_fromWorkspaceAndGlobal_inheritBoth()
 	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
-	local cfg = wks:select({ configurations = 'Debug' }):include(_global):withInheritance()
+	local cfg = wks:select({ configurations = 'Debug' }):fromScopes(_global):withInheritance()
 	test.isEqual({ 'GLOB', 'GLOB_DEBUG', 'WKS1', 'WKS1_DEBUG' }, cfg.defines)
 end
 
@@ -257,7 +257,7 @@ end
 
 function StateSelectTests.select_config_fromWorkspaceAndGlobal_inheritWorkspace()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local cfg = wks:select({ configurations = 'Debug' }):include(_global):withInheritance()
+	local cfg = wks:select({ configurations = 'Debug' }):fromScopes(_global):withInheritance()
 	test.isEqual({ 'GLOB_DEBUG', 'WKS1', 'WKS1_DEBUG' }, cfg.defines)
 end
 
@@ -285,13 +285,13 @@ end
 
 function StateSelectTests.select_project_fromWorkspace()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
 	test.isEqual({ 'GLOB_PRJ1', 'WKS1_PRJ1' }, prj.defines)
 end
 
 function StateSelectTests.select_project_fromWorkspace_workspaceInherits()
 	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
 	test.isEqual({ 'GLOB_PRJ1', 'WKS1_PRJ1' }, prj.defines)
 end
 
@@ -304,7 +304,7 @@ end
 
 function StateSelectTests.select_project_fromWorkspace_inheritBoth()
 	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
-	local prj = wks:select({ projects = 'Project1' }):include(_global):withInheritance()
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global):withInheritance()
 	test.isEqual({ 'GLOB', 'GLOB_PRJ1', 'WKS1', 'WKS1_PRJ1' }, prj.defines)
 end
 
@@ -317,7 +317,7 @@ end
 
 function StateSelectTests.select_project_fromWorkspace_inheritWorkspace()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global):withInheritance()
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global):withInheritance()
 	test.isEqual({ 'GLOB_PRJ1', 'WKS1', 'WKS1_PRJ1' }, prj.defines)
 end
 
@@ -330,7 +330,7 @@ end
 
 function StateSelectTests.select_config_fromProject()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
 	local cfg = prj:select({ configurations = 'Debug' })
 	test.isEqual({ 'GLOB_PRJ1_DEBUG', 'WKS1_PRJ1_DEBUG' }, cfg.defines)
 end
@@ -345,22 +345,22 @@ end
 
 function StateSelectTests.select_config_fromAll()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
-	local cfg = prj:select({ configurations = 'Debug' }):include(wks, _global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
+	local cfg = prj:select({ configurations = 'Debug' }):fromScopes(wks, _global)
 	test.isEqual({ 'GLOB_DEBUG', 'GLOB_PRJ1_DEBUG', 'WKS1_DEBUG', 'WKS1_PRJ1_DEBUG' }, cfg.defines)
 end
 
 function StateSelectTests.select_configOrPlatform_fromAll()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
-	local cfg = prj:selectAny({ configurations = 'Debug', platforms='macOS' }):include(wks, _global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
+	local cfg = prj:selectAny({ configurations = 'Debug', platforms='macOS' }):fromScopes(wks, _global)
 	test.isEqual({ 'GLOB_DEBUG', 'GLOB_MAC', 'GLOB_DEBUG_MAC', 'GLOB_PRJ1_DEBUG', 'WKS1_DEBUG', 'WKS1_MAC', 'WKS1_DEBUG_MAC', 'WKS1_PRJ1_DEBUG' }, cfg.defines)
 end
 
 function StateSelectTests.select_configAndPlatform_fromAll()
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
-	local cfg = prj:select({ configurations = 'Debug', platforms='macOS' }):include(wks, _global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
+	local cfg = prj:select({ configurations = 'Debug', platforms='macOS' }):fromScopes(wks, _global)
 	test.isEqual({ 'GLOB_DEBUG_MAC', 'WKS1_DEBUG_MAC' }, cfg.defines)
 end
 
@@ -372,8 +372,8 @@ end
 
 function StateSelectTests.select_config_fromAll_inherit()
 	local wks = _global:select({ workspaces = 'Workspace1' }):withInheritance()
-	local prj = wks:select({ projects = 'Project1' }):include(_global):withInheritance()
-	local cfg = prj:select({ configurations = 'Debug' }):include(wks, _global):withInheritance()
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global):withInheritance()
+	local cfg = prj:select({ configurations = 'Debug' }):fromScopes(wks, _global):withInheritance()
 	test.isEqual({ 'GLOB', 'GLOB_DEBUG', 'GLOB_PRJ1', 'GLOB_PRJ1_DEBUG', 'WKS1', 'WKS1_DEBUG', 'WKS1_PRJ1', 'WKS1_PRJ1_DEBUG' }, cfg.defines)
 end
 

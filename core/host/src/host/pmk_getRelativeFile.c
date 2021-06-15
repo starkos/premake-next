@@ -13,9 +13,9 @@
  * @param targetPath
  *    The destination path, which will be made relative to `basePath`. Must be absolute.
  */
-int pmk_getRelativeFile(char* result, const char* baseFile, const char* targetFile)
+const char* pmk_getRelativeFile(char* result, const char* baseFile, const char* targetFile)
 {
 	pmk_getDirectory(result, baseFile);
 	pmk_getRelativePath(result, result, targetFile);
-	return (TRUE);
+	return (result);
 }

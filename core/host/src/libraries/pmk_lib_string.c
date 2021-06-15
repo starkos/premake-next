@@ -19,7 +19,7 @@ int pmk_string_contains(lua_State* L)
 
 int pmk_string_endsWith(lua_State* L)
 {
-	return (pmk_unrollStrings(L, pmk_endsWith));
+	return (pmk_testStrings(L, pmk_endsWith));
 }
 
 
@@ -50,7 +50,7 @@ int pmk_string_join(lua_State* L)
 int pmk_string_hash(lua_State* L)
 {
 	const char* value = luaL_checkstring(L, 1);
-	int seed = luaL_optinteger(L, 2, 0);
+	int seed = (int)luaL_optinteger(L, 2, 0);
 	lua_pushinteger(L, pmk_hash(value, seed));
 	return (1);
 }
@@ -74,5 +74,5 @@ int pmk_string_patternFromWildcards(lua_State* L)
 
 int pmk_string_startsWith(lua_State* L)
 {
-	return (pmk_unrollStrings(L, pmk_startsWith));
+	return (pmk_testStrings(L, pmk_startsWith));
 }

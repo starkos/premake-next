@@ -17,8 +17,7 @@ local function _execute(fn)
 		project('MyProject', function () end)
 	end)
 
-	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
-	local prj = wks.projects[1]
+	local prj = vcxproj.prepare(vstudio.fetch(2015).workspaces['MyWorkspace'].projects['MyProject'])
 	vcxproj.itemDefinitionGroup(prj)
 end
 
@@ -38,7 +37,6 @@ function VsVcxItemDefinitionsGroupTests.sanityTest()
 	<ClCompile>
 		<PrecompiledHeader>NotUsing</PrecompiledHeader>
 		<WarningLevel>Level3</WarningLevel>
-		<PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 		<DebugInformationFormat>EditAndContinue</DebugInformationFormat>
 		<Optimization>Disabled</Optimization>
 	</ClCompile>
@@ -51,7 +49,6 @@ function VsVcxItemDefinitionsGroupTests.sanityTest()
 	<ClCompile>
 		<PrecompiledHeader>NotUsing</PrecompiledHeader>
 		<WarningLevel>Level3</WarningLevel>
-		<PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
 		<Optimization>MinSpace</Optimization>
 		<FunctionLevelLinking>true</FunctionLevelLinking>
 		<IntrinsicFunctions>true</IntrinsicFunctions>

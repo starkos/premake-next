@@ -13,7 +13,7 @@
  *    If specified, `path` will be considered to be relative to this (possibly
  *    also relative) path. May be `nil` if not required.
  */
-void pmk_getAbsolutePath(char* result, const char* path, const char* relativeTo)
+const char* pmk_getAbsolutePath(char* result, const char* path, const char* relativeTo)
 {
 	char buffer[PATH_MAX] = { '\0' };
 
@@ -29,7 +29,7 @@ void pmk_getAbsolutePath(char* result, const char* path, const char* relativeTo)
 
 	/* normalize the path separators */
 	strcat(buffer, path);
-	pmk_translatePathInPlace(buffer, '/');
+	pmk_translatePathInPlace(buffer, "/");
 
 	/* process it part by part */
 	result[0] = '\0';
@@ -73,4 +73,6 @@ void pmk_getAbsolutePath(char* result, const char* path, const char* relativeTo)
 	if (result[i] == '/') {
 		result[i] = '\0';
 	}
+
+	return (result);
 }

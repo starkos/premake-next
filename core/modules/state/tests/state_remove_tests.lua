@@ -134,7 +134,7 @@ function StateRemoveTests.workspaceAdds_projectRemoves_removesFromTarget_include
 	end)
 
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project2' }):include(_global)
+	local prj = wks:select({ projects = 'Project2' }):fromScopes(_global)
 	test.isEqual({}, prj.defines)
 end
 
@@ -150,7 +150,7 @@ function StateRemoveTests.workspaceAdds_projectRemoves_addsToSiblings_include()
 	end)
 
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project1' }):include(_global)
+	local prj = wks:select({ projects = 'Project1' }):fromScopes(_global)
 	test.isEqual({ 'B' }, prj.defines)
 end
 
@@ -441,7 +441,7 @@ function StateRemoveTests.workspaceAdds_globProjConfigRemoves_removesFromTarget(
 	end)
 
 	local wks = _global:select({ workspaces = 'Workspace1' })
-	local prj = wks:select({ projects = 'Project2' }):include(_global)
+	local prj = wks:select({ projects = 'Project2' }):fromScopes(_global)
 	local cfg = prj:selectAny({ configurations='Debug', platforms='macOS' })
 	test.isEqual({}, cfg.defines)
 end

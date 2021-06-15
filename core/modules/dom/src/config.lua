@@ -1,13 +1,24 @@
 local State = require('state')
+local Type = require('type')
 
-local Config = declareType('Config', State)
+local Config = Type.declare('Config', State)
 
+
+---
+-- Instantiate a new configuration helper.
+--
+-- @param state
+--    The configuration state.
+-- @returns
+--    A new configuration helper instance.
+---
 
 function Config.new(state)
-	local cfg = instantiateType(Config, state)
+	local cfg = Type.assign(Config, state)
 
 	cfg.configuration = state.configurations[1]
 	cfg.platform = state.platforms[1]
+	cfg.name = table.concat({ cfg.configuration, cfg.platform }, '|')
 
 	return cfg
 end

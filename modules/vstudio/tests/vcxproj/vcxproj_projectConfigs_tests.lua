@@ -17,8 +17,7 @@ local function _execute(fn)
 		project('MyProject', function () end)
 	end)
 
-	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
-	local prj = wks.projects[1]
+	local prj = vcxproj.prepare(vstudio.fetch(2015).workspaces['MyWorkspace'].projects['MyProject'])
 	vcxproj.projectConfigurations(prj)
 end
 

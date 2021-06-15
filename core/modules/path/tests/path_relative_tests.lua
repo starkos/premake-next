@@ -7,7 +7,7 @@ local PathRelativeTests = test.declare('PathRelativeTests', 'path')
 -- If both paths match exactly, return '.'
 ---
 
-function PathRelativeTests.getRelative_onMatchingPaths()
+function PathRelativeTests.onMatchingPaths()
 	test.isEqual('.', path.getRelative('/a/b/c', '/a/b/c'))
 end
 
@@ -16,7 +16,7 @@ end
 -- If the target is a single level above the base, return '..'
 ---
 
-function PathRelativeTests.getRelative_onTargetOneLevelAboveBase()
+function PathRelativeTests.onTargetOneLevelAboveBase()
 	test.isEqual('..', path.getRelative('/a/b/c', '/a/b'))
 end
 
@@ -25,7 +25,7 @@ end
 -- If the target is multiple levels above, return the corresponding number of '..'
 ---
 
-function PathRelativeTests.getRelative_onTargetMultipleLevelsAboveBase()
+function PathRelativeTests.onTargetMultipleLevelsAboveBase()
 	test.isEqual('../..', path.getRelative('/a/b/c/d', '/a/b'))
 end
 
@@ -34,7 +34,7 @@ end
 -- If the base and target are siblings...
 ---
 
-function PathRelativeTests.getRelative_onSiblings()
+function PathRelativeTests.onSiblings()
 	test.isEqual('../d', path.getRelative('/a/b/c', '/a/b/d'))
 end
 
@@ -43,7 +43,7 @@ end
 -- If the target is a single level below the base, return just the directory name
 ---
 
-function PathRelativeTests.getRelative_onSingleLevelBelow()
+function PathRelativeTests.onSingleLevelBelow()
 	test.isEqual('c', path.getRelative('/a/b', '/a/b/c'))
 end
 
@@ -52,11 +52,11 @@ end
 -- Should work with drives and servers
 ---
 
-function PathRelativeTests.getRelative_onWindowsDrive()
+function PathRelativeTests.onWindowsDrive()
 	test.isEqual('../Premake6', path.getRelative('C:/Code/Premake5', 'C:/Code/Premake6'))
 end
 
-function PathRelativeTests.getRelative_onServerName()
+function PathRelativeTests.onServerName()
 	test.isEqual('../Premake6', path.getRelative('//server/Code/Premake5', '//server/Code/Premake6'))
 end
 
@@ -65,19 +65,19 @@ end
 -- If target starts with an entirely different root folder, return the full target path
 ---
 
-function PathRelativeTests.getRelative_onDifferentRoots()
+function PathRelativeTests.onDifferentRoots()
 	test.isEqual('/Projects/Premake', path.getRelative('/Code/Premake', '/Projects/Premake'))
 end
 
-function PathRelativeTests.getRelative_onDifferentWindowsRoots()
+function PathRelativeTests.onDifferentWindowsRoots()
 	test.isEqual('C:/Projects/Premake', path.getRelative('C:/Code/Premake', 'C:/Projects/Premake'))
 end
 
-function PathRelativeTests.getRelative_onDifferentWindowsDrives()
+function PathRelativeTests.onDifferentWindowsDrives()
 	test.isEqual('D:/Code/Premake', path.getRelative('C:/Code/Premake', 'D:/Code/Premake'))
 end
 
-function PathRelativeTests.getRelative_onDifferentServers()
+function PathRelativeTests.onDifferentServers()
 	test.isEqual('//Projects/Premake', path.getRelative('//Code/Premake', '//Projects/Premake'))
 end
 
@@ -86,7 +86,7 @@ end
 -- Leading macros should be treated like absolute paths
 ---
 
-function PathRelativeTests.getRelative_onLeadingDollarMacro()
+function PathRelativeTests.onLeadingDollarMacro()
 	test.isEqual('$(SDK_HOME)/include', path.getRelative('C:/Code/Premake', '$(SDK_HOME)/include'))
 end
 
@@ -95,15 +95,15 @@ end
 -- Extra slashes in paths should be ignored
 ---
 
-function PathRelativeTests.getRelative_ignoresExtraSlashes2()
+function PathRelativeTests.ignoresExtraSlashes2()
 	test.isEqual('..', path.getRelative('/a//b/c','/a/b'))
 end
 
-function PathRelativeTests.getRelative_ignoresExtraSlashes3()
+function PathRelativeTests.ignoresExtraSlashes3()
 	test.isEqual('..', path.getRelative('/a///b/c','/a/b'))
 end
 
-function PathRelativeTests.getRelative_ignoresTrailingSlashes()
+function PathRelativeTests.ignoresTrailingSlashes()
 	test.isEqual('c', path.getRelative('/a/b/','/a/b/c'))
 end
 
@@ -114,4 +114,17 @@ end
 
 function PathRelativeTests.getRelativeFile_onSameDirectory()
 	test.isEqual('bye.txt', path.getRelativeFile('/a/b/hello.txt', '/a/b/bye.txt'))
+end
+
+
+---
+-- Works with arrays of paths.
+---
+
+function PathRelativeTests.onArrayOfPaths()
+	test.isEqual({ 'c', 'd' }, path.getRelative('/a/b', { '/a/b/c', '/a/b/d' }))
+end
+
+function PathRelativeTests.getRelativeFile_onArrayOfPaths()
+	test.isEqual({ 'bye.txt', 'adios.txt' }, path.getRelativeFile('/a/b/hello.txt', { '/a/b/bye.txt', '/a/b/adios.txt' }))
 end

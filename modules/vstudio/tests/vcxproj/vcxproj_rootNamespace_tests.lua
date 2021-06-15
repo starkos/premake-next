@@ -8,14 +8,13 @@ local VsVcxRootNamespaceTests = test.declare('VsVcxRootNamespaceTests', 'vcxproj
 
 function VsVcxRootNamespaceTests.isSetToProjectName()
 	workspace('MyWorkspace', function ()
-		project('ProjectA')
+		project('MyProject')
 	end)
 
-	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
-	local prj = wks.projects[1]
+	local prj = vcxproj.prepare(vstudio.fetch(2015).workspaces['MyWorkspace'].projects['MyProject'])
 	vcxproj.rootNamespace(prj)
 
 	test.capture [[
-<RootNamespace>ProjectA</RootNamespace>
+<RootNamespace>MyProject</RootNamespace>
 	]]
 end

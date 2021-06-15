@@ -9,8 +9,9 @@
 ---
 
 local Field = require('field')
+local Type = require('type')
 
-local Condition = declareType('Condition')
+local Condition = Type.declare('Condition')
 
 Condition.NIL_MATCHES_ANY = true
 Condition.NIL_MATCHES_NONE = false
@@ -33,7 +34,7 @@ local _allFieldsTested = {}
 ---
 
 function Condition.new(clauses)
-	local self = instantiateType(Condition, {
+	local self = Type.assign(Condition, {
 		_fieldsTested = {},
 		_rootTest = nil
 	})
@@ -236,7 +237,7 @@ function Condition.merge(left, right)
 		left._rootTest, right._rootTest
 	}
 
-	return instantiateType(Condition, {
+	return Type.assign(Condition, {
 		_fieldsTested = fieldsTested,
 		_rootTest = rootTest
 	})

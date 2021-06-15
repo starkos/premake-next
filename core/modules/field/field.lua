@@ -6,8 +6,9 @@
 
 local array = require('array')
 local Callback = require('callback')
+local Type = require('type')
 
-local Field = declareType('Field')
+local Field = Type.declare('Field')
 
 local _registeredFields = {}
 
@@ -93,7 +94,7 @@ end
 ---
 
 function Field.register(definition)
-	local field = instantiateType(Field, definition)
+	local field = Type.assign(Field, definition)
 
 	for op in pairs(_processors) do
 		field[op] = _fetchProcessor(op, field.kind)
@@ -274,7 +275,7 @@ function Field.receiveAllValues(...)
 		for key, value in pairs(block) do
 			local field
 
-			if typeOf(key) == 'Field' then
+			if Type.typeName(key) == 'Field' then
 				field = key
 			elseif type(key) == 'string' then
 				field = Field.tryGet(key)
@@ -330,9 +331,11 @@ function Field.__tostring(self)
 end
 
 
+doFile('./src/kind_directory.lua', Field)
 doFile('./src/kind_file.lua', Field)
 doFile('./src/kind_list.lua', Field)
 doFile('./src/kind_set.lua', Field)
 doFile('./src/kind_string.lua', Field)
+
 
 return Field

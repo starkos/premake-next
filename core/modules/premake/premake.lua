@@ -26,6 +26,11 @@ local _store = Store.new()
 local _testStateSnapshot
 
 
+---
+-- Before running a unit test, snapshot the current baseline configuration, and restore
+-- it once the test has completed.
+---
+
 onRequire('testing', function (testing)
 	local snapshot
 

@@ -15,10 +15,10 @@ local array = require('array')
 local Block = require('block')
 local Condition = require('condition')
 local Field = require('field')
-local immutability = require('immutability')
 local Store = require('store')
+local Type = require('type')
 
-local State = declareType('State')
+local State = Type.declare('State')
 
 local Query = doFile('./src/query.lua')
 
@@ -76,7 +76,7 @@ local function _new(state)
 	-- all internal state is tucked away behind an extra table dereference. This ensures
 	-- no naming collisions, and also prevents hard to identify crashes when you mistype
 	-- the name of an internal variable
-	return instantiateType(State, {
+	return Type.assign(State, {
 		[State] = table.mergeKeys({
 			_container = nil,
 			_blocks = _EMPTY,
@@ -278,7 +278,7 @@ end
 -- Include blocks that are specified outside of this scope's immediate container.
 ---
 
-function State.include(self, ...)
+function State.fromScopes(self, ...)
 	local state = self[State]
 
 	if state._noInheritanceVersion ~= nil then
