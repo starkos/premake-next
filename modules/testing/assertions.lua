@@ -111,6 +111,6 @@ end
 function testing.noOutput()
 	local actual = export.captured()
 	if actual ~= '' then
-		m.fail("expected no output, but was %s", actual);
+		testing.fail("expected no output, but was %s", actual);
 	end
 end

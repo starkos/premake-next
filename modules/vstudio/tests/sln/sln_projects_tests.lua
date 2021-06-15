@@ -17,7 +17,7 @@ local function _execute(fn)
 		fn()
 	end)
 
-	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
+	local wks = vstudio.fetch(2015).workspaces['MyWorkspace']
 	sln.projects(wks)
 end
 

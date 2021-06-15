@@ -22,7 +22,7 @@ Field.register({
 
 Field.register({
 	name = 'baseDir',
-	kind = 'file'
+	kind = 'directory'
 })
 
 Field.register({
@@ -59,6 +59,11 @@ Field.register({
 })
 
 Field.register({
+	name = 'includeDirs',
+	kind = 'list:directory'
+})
+
+Field.register({
 	name = 'kind',
 	kind = 'string',
 	allowed = {
@@ -71,7 +76,7 @@ Field.register({
 
 Field.register({
 	name = 'location',
-	kind = 'file'
+	kind = 'directory'
 })
 
 Field.register({

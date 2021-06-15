@@ -1,6 +1,6 @@
 ---
--- File fields hold absolute file paths, and support wilcard matching when
--- used in a collection.
+-- Directory fields hold absolute directory paths, and support wilcard matching
+-- when used in a collection.
 ---
 
 local path = require('path')
@@ -48,7 +48,7 @@ end
 local function receive(field, inner, currentValue, newValue)
 	newValue = _normalize(newValue)
 	if string.contains(newValue, '*') then
-		return os.matchFiles(newValue)
+		return os.matchDirs(newValue)
 	else
 		return newValue
 	end
@@ -64,7 +64,7 @@ local function remove(field, inner, currentValue, pattern, plain)
 end
 
 
-Field.registerKind('file', {
+Field.registerKind('directory', {
 	default = default,
 	match = match,
 	merge = merge,

@@ -22,7 +22,7 @@
  * @param targetPath
  *    The destination path, which will be made relative to `basePath`. Must be absolute.
  */
-int pmk_getRelativePath(char* result, const char* basePath, const char* targetPath)
+const char* pmk_getRelativePath(char* result, const char* basePath, const char* targetPath)
 {
 	int count, last, i;
 
@@ -35,7 +35,7 @@ int pmk_getRelativePath(char* result, const char* basePath, const char* targetPa
 	/* Are they the same path? */
 	if (cmpstr(base, target) == 0) {
 		strcpy(result, ".");
-		return (TRUE);
+		return (result);
 	}
 
 	/* Does the target path start with a macro? No way to know what the actual path
@@ -43,7 +43,7 @@ int pmk_getRelativePath(char* result, const char* basePath, const char* targetPa
 	 * to work as expected. */
 	if (target[0] == '$') {
 		strcpy(result, target);
-		return (TRUE);
+		return (result);
 	}
 
 	/* Find the common leading directories */
@@ -63,14 +63,14 @@ int pmk_getRelativePath(char* result, const char* basePath, const char* targetPa
 	 * DOS driver letter, return the absolute target path */
 	if (last <= 0 || (last == 2 && base[1] == ':')) {
 		strcpy(result, target);
-		return (TRUE);
+		return (result);
 	}
 
 	/* Same deal for "//server" paths: if we've hit the top of the file system
 	* return the absolute target path */
 	if (last == 1 && base[0] == '/' && base[1] == '/') {
 		strcpy(result, target);
-		return (TRUE);
+		return (result);
 	}
 
 	/* Count how many directory levels the base path continues to decend past the common root... */
@@ -95,5 +95,5 @@ int pmk_getRelativePath(char* result, const char* basePath, const char* targetPa
 	if (result[last] == '/')
 		result[last] = '\0';
 
-	return (TRUE);
+	return (result);
 }

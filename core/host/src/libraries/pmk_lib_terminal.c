@@ -8,7 +8,7 @@
 int pmk_terminal_textColor(lua_State* L)
 {
 	if (lua_gettop(L) > 0) {
-		int color = luaL_checkinteger(L, 1);
+		int color = (int)luaL_checkinteger(L, 1);
 		pmk_setTextColor(color);
 	}
 

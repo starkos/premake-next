@@ -22,23 +22,23 @@ project 'Premake6'
 		'core/host/src/**.h',
 		'core/host/src/**.c',
 		'core/host/src/**.lua',
-		'core/host/contrib/lua/src/**.h',
-		'core/host/contrib/lua/src/**.c'
+		'core/contrib/lua/src/**.h',
+		'core/contrib/lua/src/**.c'
 	}
 
 	removefiles
 	{
-		'core/host/contrib/lua/src/lua.c',
-		'core/host/contrib/lua/src/luac.c',
-		'core/host/contrib/lua/src/print.c',
-		'core/host/contrib/lua/**.lua',
-		'core/host/contrib/lua/etc/*.c'
+		'core/contrib/lua/src/lua.c',
+		'core/contrib/lua/src/luac.c',
+		'core/contrib/lua/src/print.c',
+		'core/contrib/lua/**.lua',
+		'core/contrib/lua/etc/*.c'
 	}
 
 	includedirs
 	{
-		'core/host/include',
-		'core/host/contrib'
+		'core/include',
+		'core/contrib'
 	}
 
 	flags { 'MultiProcessorCompile' }

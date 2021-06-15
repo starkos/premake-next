@@ -2,27 +2,36 @@
 #include <string.h>
 
 /**
- * Translates the separators in a path to the specied path.
+ * Translates slashes in a path, copying the result into the provided buffer.
  *
  * @param result
  *    A buffer to hold the translated path.
  * @param path
  *    The path to be translated.
  * @param separator
- *    A new path separator.
+ *    A new path separator; only the first character will be used.
  */
-void pmk_translatePath(char* result, const char* path, const char separator)
+const char* pmk_translatePath(char* result, const char* path, const char* separator)
 {
 	strcpy(result, path);
 	pmk_translatePathInPlace(result, separator);
+	return (result);
 }
 
 
-void pmk_translatePathInPlace(char* path, const char separator)
+/**
+ * Translates slashes in a path.
+ *
+ * @param path
+ *    The path to be translated.
+ * @param separator
+ *    A new path separator; only the first character will be used.
+ */
+void pmk_translatePathInPlace(char* path, const char* separator)
 {
 	for (char* ch = path; *ch != '\0'; ++ch) {
 		if (*ch == '/' || *ch == '\\') {
-			*ch = separator;
+			*ch = separator[0];
 		}
 	}
 }

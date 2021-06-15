@@ -82,13 +82,13 @@ int  pmk_compareFile(const char* path, const char* contents);
 int  pmk_doFile(lua_State* L, const char* filename);
 int  pmk_endsWith(const char* haystack, const char* needle);
 void pmk_escapeXml(char* result, const char* value);
-void pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
+const char* pmk_getAbsolutePath(char* result, const char* value, const char* relativeTo);
 int  pmk_getCwd(char* result);
 void pmk_getDirectory(char* result, const char* value);
 int  pmk_getFileBaseName(char* result, const char* path);
 int  pmk_getFileName(char* result, const char* path);
-int  pmk_getRelativeFile(char* result, const char* baseFile, const char* targetFile);
-int  pmk_getRelativePath(char* result, const char* basePath, const char* targetPath);
+const char* pmk_getRelativeFile(char* result, const char* baseFile, const char* targetFile);
+const char* pmk_getRelativePath(char* result, const char* basePath, const char* targetPath);
 int  pmk_getTextColor();
 uint32_t pmk_hash(const char* value, int seed);
 int  pmk_isAbsolutePath(const char* path);
@@ -101,6 +101,7 @@ const char* pmk_locate(char* result, const char* name, const char* paths[], cons
 void pmk_locateExecutable(char* result, const char* argv0);
 const char* pmk_locateModule(char* result, lua_State* L, const char* moduleName);
 const char* pmk_locateScript(char* result, lua_State* L, const char* filename);
+int  pmk_mapStrings(lua_State* L, int valueIndex, const char* param, const char* (*mappingFunction)(char*, const char*, const char*));
 void pmk_matchDone(Matcher* matcher);
 int  pmk_matchName(Matcher* matcher, char* buffer, size_t bufferSize);
 int  pmk_matchNext(Matcher* matcher);
@@ -114,10 +115,10 @@ int  pmk_patternFromWildcards(char* result, int maxLen, const char* value, int i
 int  pmk_pcall(lua_State* L, int nargs, int nresults);
 const char** pmk_searchPaths(lua_State* L);
 int  pmk_startsWith(const char* haystack, const char* needle);
+int  pmk_testStrings(lua_State* L, int (*testFunction)(const char*, const char*));
 int  pmk_touchFile(const char* path);
-void pmk_translatePath(char* result, const char* value, const char separator);
-void pmk_translatePathInPlace(char* value, const char sep);
-int  pmk_unrollStrings(lua_State* L, int (*func)(const char*, const char*));
+const char* pmk_translatePath(char* result, const char* value, const char* separator);
+void pmk_translatePathInPlace(char* value, const char* separator);
 int  pmk_uuid(char* result, const char* value);
 int  pmk_writeFile(const char* path, const char* contents);
 

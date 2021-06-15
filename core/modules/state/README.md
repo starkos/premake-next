@@ -267,7 +267,7 @@ TODO: finish this thought; need to also include the 'MyProject' block from the g
 
 ```lua
 wks = global:select({ workspaces = 'Workspace1' })
-prj = wks:select({ projects = 'MyProject' }):include(global)
+prj = wks:select({ projects = 'MyProject' }):fromScopes(global)
 
 prj.defines -- { 'PROJECT1', 'PROJECT3' }
 ```

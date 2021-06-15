@@ -2,9 +2,9 @@
 
 #include <string.h>
 
-#define ERROR     (-1)
-#define NO_MATCH  (0)
-#define MATCH     (1)
+#define CMP_FAILED    (-1)
+#define CMP_NO_MATCH  (0)
+#define CMP_MATCH     (1)
 
 
 int pmk_compareFile(const char* path, const char* contents)
@@ -14,14 +14,14 @@ int pmk_compareFile(const char* path, const char* contents)
 
 	FILE* file = pmk_openFile(path, "rb");
 	if (file == NULL)
-		return (ERROR);
+		return (CMP_FAILED);
 
 	/* Does file size match string length? */
 	fseek(file, 0, SEEK_END);
 	numBytesInFile = ftell(file);
 	if (numBytesInFile != strlen(contents)) {
 		fclose(file);
-		return (NO_MATCH);
+		return (CMP_NO_MATCH);
 	}
 
 	/* Read and compare chunks until a difference is found */
@@ -31,12 +31,12 @@ int pmk_compareFile(const char* path, const char* contents)
 		size_t numBytesRead = fread(buffer, 1, numBytesToRead, file);
 		if (numBytesRead != numBytesToRead) {
 			fclose(file);
-			return (ERROR);
+			return (CMP_FAILED);
 		}
 
 		if (memcmp(contents, buffer, numBytesRead) != 0) {
 			fclose(file);
-			return (NO_MATCH);
+			return (CMP_NO_MATCH);
 		}
 
 		numBytesInFile -= numBytesRead;
@@ -44,5 +44,5 @@ int pmk_compareFile(const char* path, const char* contents)
 	}
 
 	fclose(file);
-	return (MATCH);
+	return (CMP_MATCH);
 }

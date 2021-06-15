@@ -1,8 +1,10 @@
-local Stack = declareType('Stack')
+local Type = require('type')
+
+local Stack = Type.declare('Stack')
 
 
 function Stack.new(initialValues)
-	local self = instantiateType(Stack)
+	local self = Type.assign(Stack)
 
 	if initialValues ~= nil then
 		for i = 1, #initialValues do

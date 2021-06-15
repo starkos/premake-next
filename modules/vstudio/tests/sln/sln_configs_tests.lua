@@ -6,17 +6,12 @@ local sln = vstudio.sln
 local VsSlnConfigTests = test.declare('VsSlnConfigTests', 'vstudio-sln', 'vstudio')
 
 
-function VsSlnConfigTests.setup()
-	vstudio.setTargetVersion(2015)
-end
-
-
 local function _execute(fn)
 	workspace('MyWorkspace', function ()
 		fn()
 	end)
 
-	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
+	local wks = vstudio.fetch(2015).workspaces['MyWorkspace']
 	sln.solutionConfiguration(wks)
 end
 

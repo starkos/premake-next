@@ -39,7 +39,7 @@ function tree.add(self, itemPath)
 
 	local parentNode = tree.add(self, path.getDirectory(itemPath))
 	local itemName = path.getName(itemPath)
-	local itemNode = parentNode[itemName]
+	local itemNode = parentNode.children[itemName]
 
 	if itemNode == nil then
 		itemNode = tree.new(itemName)
@@ -49,7 +49,7 @@ function tree.add(self, itemPath)
 			parentNode.children = {}
 		end
 
-		parentNode[itemName] = itemNode
+		parentNode.children[itemName] = itemNode
 		table.insert(parentNode.children, itemNode)
 	end
 

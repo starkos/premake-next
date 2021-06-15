@@ -18,8 +18,7 @@ local function _execute(fn)
 		end)
 	end)
 
-	local wks = vstudio.Workspace.extract(premake.newState(), 'MyWorkspace')
-	local prj = vcxproj.prepare(wks.projects[1])
+	local prj = vcxproj.prepare(vstudio.fetch(2015).workspaces['MyWorkspace'].projects['MyProject'])
 	vcxproj.filters.filters(prj)
 end
 

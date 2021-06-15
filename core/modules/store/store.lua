@@ -7,8 +7,9 @@
 local Block = require('block')
 local Condition = require('condition')
 local Stack = require('stack')
+local Type = require('type')
 
-local Store = declareType('Store')
+local Store = Type.declare('Store')
 
 
 ---
@@ -40,7 +41,7 @@ end
 
 function Store.new()
 	-- if new fields are added here, update `snapshot()` and `restore()` too
-	return instantiateType(Store, {
+	return Type.assign(Store, {
 		_conditions = Stack.new({ Condition.new(_EMPTY) }),
 		_blocks = {},
 		_currentBlock = nil
